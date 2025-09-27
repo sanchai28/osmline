@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="th" class="h-full touch-manipulation">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#16a34a" />
+  <title>อสม. – โปรไฟล์ & เช็คชื่อ (LIFF)</title>
+  <link rel="preconnect" href="https://static.line-scdn.net" />
+  <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { brand: { DEFAULT: '#16a34a', 600: '#16a34a' } },
+          boxShadow: { soft: '0 6px 24px rgba(0,0,0,.07)' }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root{ --safe-top: env(safe-area-inset-top); --safe-bottom: env(safe-area-inset-bottom); }
+    .safe-top{ padding-top: max(0.5rem, var(--safe-top)); }
+    .safe-bottom{ padding-bottom: max(0.75rem, var(--safe-bottom)); }
+    .line-clamp-1{ display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+    .fade-in{ animation: fade-in .2s ease both; }
+    @keyframes fade-in{ from{opacity:0; transform: translateY(2px)} to{opacity:1; transform:none} }
+  </style>
+</head>
+<body class="h-full bg-gray-50 text-gray-900">
+  <!-- Header -->
+  <header class="safe-top sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-gray-200">
+    <div class="max-w-md mx-auto flex items-center gap-3 p-3">
+      <div class="w-9 h-9 rounded-xl grid place-items-center bg-emerald-100 text-emerald-700">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5 21q-1.25 0-2.125-.875T2 18q0-3.35 2.325-5.675Q6.65 10 10 10h6q.825 0 1.413.587T18 12v2q0 2.9-2.05 4.95T11 21H5Zm14-9q-1.65 0-2.825-1.175T15 8q0-1.65 1.175-2.825T19 4q1.65 0 2.825 1.175T23 8q0 1.65-1.175 2.825T19 12Z"/></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="text-base font-semibold leading-5 line-clamp-1">อสม. – ข้อมูลส่วนตัว</div>
+        <div class="text-xs text-gray-500">LIFF Mobile • ผูกบัญชี & เช็คชื่อ</div>
+      </div>
+      <button id="btnRefresh" class="text-sm px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300">รีเฟรช</button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="max-w-md mx-auto p-4 pb-32">
+    <!-- Consent / Status -->
+    <div id="consent" class="text-xs text-gray-600 bg-white border border-gray-200 rounded-xl p-3 shadow-soft">
+      ระบบจะใช้ข้อมูล LINE ของคุณ (userId/ชื่อ/รูป) เพื่อยืนยันตัวตนและแสดงข้อมูลส่วนตัว
+    </div>
+    <div id="status" class="mt-3 hidden px-3 py-2 rounded-xl text-sm"></div>
+
+    <!-- Enroll (Pre-load capture) -->
+    <section id="enrollCard" class="mt-4 bg-white rounded-2xl shadow-soft border border-gray-100">
+      <div class="p-4">
+        <div class="font-semibold mb-1">ยืนยันตัวตนใน LINE (บันทึก userId)</div>
+        <p class="text-xs text-gray-500 mb-3">กดปุ่มด้านล่างเพื่อบันทึก <span class="font-medium">LINE userId</span> ของคุณลงระบบ (ตาราง <code>LiffEnroll</code>) เพื่อให้จนท.นำไปผูกกับ CID ภายหลัง หรือให้ระบบซิงก์อัตโนมัติ</p>
+        <button id="btnEnroll" class="w-full py-3 rounded-xl bg-emerald-600 text-white font-medium active:scale-[.99]">ยืนยันตัวตนใน LINE</button>
+        <div id="enrollMsg" class="text-xs text-gray-600 mt-2"></div>
+      </div>
+    </section>
+
+    <!-- Profile Card -->
+    <section id="profileCard" class="hidden mt-4 bg-white rounded-2xl shadow-soft border border-gray-100">
+      <div class="p-4 flex items-center gap-3">
+        <img id="pic" class="w-14 h-14 rounded-2xl object-cover bg-gray-100" alt="profile" />
+        <div class="min-w-0">
+          <div id="displayName" class="font-semibold leading-5 line-clamp-1">—</div>
+          <div id="cid" class="text-xs text-gray-500">CID: —</div>
+        </div>
+      </div>
+      <div class="px-4 pb-4 grid grid-cols-2 gap-3 text-sm">
+        <div class="p-3 rounded-xl bg-gray-50">
+          <div class="text-gray-500 text-xs">ชื่อ-สกุล</div>
+          <div id="fullname" class="font-medium break-words">—</div>
+        </div>
+        <div class="p-3 rounded-xl bg-gray-50">
+          <div class="text-gray-500 text-xs">หมู่บ้าน</div>
+          <div id="village" class="font-medium">—</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Link Form (self-link) -->
+    <section id="linkForm" class="hidden mt-4 bg-white rounded-2xl shadow-soft border border-gray-100">
+      <div class="p-4">
+        <div class="font-semibold mb-1">ยืนยันตัวตนเพื่อผูกบัญชี (CID + วันเกิด)</div>
+        <p class="text-xs text-gray-500 mb-3">กรณีระบบยังไม่ผูกอัตโนมัติ ให้ยืนยันตัวตนด้วยเลขบัตรประชาชนและวันเกิด</p>
+        <div class="space-y-3">
+          <div>
+            <label for="f_cid" class="block text-xs text-gray-600">เลขบัตรประชาชน (13 หลัก)</label>
+            <input id="f_cid" inputmode="numeric" maxlength="13" placeholder="เช่น 1169800190675" class="mt-1 w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" />
+          </div>
+          <div>
+            <label for="f_dob" class="block text-xs text-gray-600">วันเกิด (YYYY-MM-DD)</label>
+            <input id="f_dob" placeholder="เช่น 1980-06-21" class="mt-1 w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" />
+          </div>
+          <button id="btnLink" class="w-full py-3 rounded-xl bg-emerald-600 text-white font-medium active:scale-[.99]">ผูกบัญชี</button>
+          <div id="linkMsg" class="text-xs text-gray-600"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Meetings -->
+    <section id="meetings" class="hidden mt-5">
+      <div class="mb-2 text-sm font-semibold">การประชุมที่เปิดอยู่</div>
+      <div id="meetingList" class="grid gap-3"></div>
+    </section>
+  </main>
+
+  <!-- Bottom Tabs -->
+  <nav class="safe-bottom fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur border-t border-gray-200">
+    <div class="max-w-md mx-auto grid grid-cols-3">
+      <button id="tabEnroll" class="py-3 flex flex-col items-center gap-1 text-emerald-700">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12q-1.65 0-2.825-1.175T8 8q0-1.65 1.175-2.825T12 4q1.65 0 2.825 1.175T16 8q0 1.65-1.175 2.825T12 12ZM6 20q-1.25 0-2.125-.875T3 17q0-1.25.875-2.125T6 14h12q1.25 0 2.125.875T21 17q0 1.25-.875 2.125T18 20Z"/></svg>
+        <span class="text-xs font-medium">ยืนยันตัวตน</span>
+      </button>
+      <button id="tabProfile" class="py-3 flex flex-col items-center gap-1 text-gray-500">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12q-1.65 0-2.825-1.175T8 8q0-1.65 1.175-2.825T12 4q1.65 0 2.825 1.175T16 8q0 1.65-1.175 2.825T12 12Zm-8 8v-2.2q0-.85.438-1.562T5.6 14.9q1.55-.9 3.188-1.4T12 13t3.212.5q1.638.5 3.188 1.4q.725.425 1.163 1.138T20 17.8V20H4Z"/></svg>
+        <span class="text-xs font-medium">โปรไฟล์</span>
+      </button>
+      <button id="tabMeet" class="py-3 flex flex-col items-center gap-1 text-gray-500">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4H5q-.825 0-1.412.587T3 6v12q0 .825.588 1.413T5 20h14q.825 0 1.413-.587T21 18V6q0-.825-.587-1.413T19 4ZM8 11H6V9h2v2Zm0 4H6v-2h2v2Zm5-4h-3V9h3v2Zm5 0h-3V9h3v2Zm-5 4h-3v-2h3v2Zm5 0h-3v-2h3v2Z"/></svg>
+        <span class="text-xs font-medium">ประชุม</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Toast -->
+  <div id="toast" class="pointer-events-none fixed inset-x-0 bottom-24 flex justify-center"></div>
+
+  <script>
+    // ===== CONFIG =====
+    const LIFF_ID = 'PUT_YOUR_LIFF_ID';
+    const API_BASE = 'https://script.google.com/macros/s/AKfycbwVMw1YFQOX0r6EV1MkGOi1qm33NxBe2p-RYY7ITgF69-kRISawXpKyYh2PWI932yjv/exec'; // ลงท้าย /exec
+
+    // ===== UTIL =====
+    const $ = (id)=> document.getElementById(id);
+    const show = (id)=> $(id).classList.remove('hidden');
+    const hide = (id)=> $(id).classList.add('hidden');
+    const setStatus = (msg, type='info')=>{
+      const el = $('status');
+      el.textContent = msg || '';
+      el.className = 'mt-3 px-3 py-2 rounded-xl text-sm ' + (type==='ok' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : type==='err' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-gray-50 text-gray-700 border border-gray-200');
+      show('status');
+    };
+    const toast = (msg)=>{
+      const t = $('toast');
+      const node = document.createElement('div');
+      node.className = 'mx-3 mb-3 bg-gray-900 text-white text-sm px-3 py-2 rounded-xl shadow-xl fade-in';
+      node.textContent = msg;
+      t.appendChild(node);
+      setTimeout(()=>{ node.remove(); }, 2400);
+    };
+    const qs = new URLSearchParams(location.search);
+    function deviceInfo(){ return navigator.userAgent || ''; }
+
+    async function apiGet(path, params={}){
+      const url = new URL(API_BASE + '/' + path);
+      Object.entries(params).forEach(([k,v])=> url.searchParams.set(k,v));
+      const res = await fetch(url.toString());
+      if(!res.ok) throw new Error('Network error');
+      return res.json();
+    }
+    async function apiPost(path, body={}){
+      const res = await fetch(API_BASE + '/' + path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      if(!res.ok) throw new Error('Network error');
+      return res.json();
+    }
+
+    // ===== TABS =====
+    function setTab(tab){
+      const isEnroll  = tab==='enroll';
+      const isProfile = tab==='profile';
+      const isMeet    = tab==='meet';
+      $('tabEnroll').classList.toggle('text-emerald-700', isEnroll);
+      $('tabEnroll').classList.toggle('text-gray-500', !isEnroll);
+      $('tabProfile').classList.toggle('text-emerald-700', isProfile);
+      $('tabProfile').classList.toggle('text-gray-500', !isProfile);
+      $('tabMeet').classList.toggle('text-emerald-700', isMeet);
+      $('tabMeet').classList.toggle('text-gray-500', !isMeet);
+      if(isEnroll){ show('enrollCard'); hide('profileCard'); hide('linkForm'); hide('meetings'); }
+      if(isProfile){ show('profileCard'); hide('enrollCard'); hide('meetings'); }
+      if(isMeet){ show('meetings'); hide('enrollCard'); hide('profileCard'); }
+    }
+
+    // ===== APP STATE =====
+    let gUserId = '';
+    let gProfile = null;
+
+    async function bootstrap(){
+      setStatus('กำลังเริ่มระบบ…');
+      try{
+        await liff.init({ liffId: LIFF_ID });
+        if(!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
+        const prof = await liff.getProfile();
+        gProfile = prof; gUserId = prof.userId;
+
+        // INIT → ลองแมปจาก UsersMap (pre-load) อัตโนมัติ
+        const init = await apiGet('init', { userId: gUserId });
+        if(!init.ok){ setStatus('ไม่สามารถเริ่มต้นได้', 'err'); setTab('enroll'); return; }
+
+        if(init.mapped){
+          setStatus('ผูกบัญชีแล้ว', 'ok');
+          renderProfile(init.volBasic, prof);
+          await loadMeetings();
+          setTab('profile');
+        } else {
+          setStatus('ยังไม่ได้ผูกบัญชี', 'info');
+          show('linkForm');
+          setTab('enroll');
+        }
+      }catch(err){
+        console.error(err);
+        setStatus('เกิดข้อผิดพลาดในการเริ่มต้น', 'err');
+        setTab('enroll');
+      }
+    }
+
+    function renderProfile(volBasic, prof){
+      $('profileCard').classList.remove('hidden');
+      $('displayName').textContent = prof?.displayName || '';
+      $('pic').src = prof?.pictureUrl || '';
+      $('cid').textContent = 'CID: ' + (volBasic?.cid || '—');
+      $('fullname').textContent = volBasic?.fullname || '—';
+      $('village').textContent = volBasic?.village || '—';
+    }
+
+    async function loadMeetings(){
+      try{
+        const m = await apiGet('meetings');
+        if(m.ok){
+          const list = (m.meetings||[]).map(x=>{
+            return `<div class=\"bg-white border border-gray-200 rounded-2xl p-4 shadow-soft\">
+              <div class=\"flex items-start justify-between gap-3\">
+                <div class=\"min-w-0\">
+                  <div class=\"font-medium text-[15px] leading-5\">${x.title||'-'}</div>
+                  <div class=\"text-xs text-gray-500\">${x.date||''} ${x.time||''} @ ${x.location||''}</div>
+                </div>
+                <button data-id=\"${x.meeting_id}\" class=\"btnCheckin shrink-0 px-3 py-2 rounded-xl bg-emerald-600 text-white text-sm active:scale-[.99]\">เช็คชื่อ</button>
+              </div>
+            </div>`
+          }).join('');
+          $('meetings').classList.remove('hidden');
+          $('meetingList').innerHTML = list || '<div class="text-xs text-gray-500">ไม่มีการประชุมที่เปิดอยู่</div>';
+          document.querySelectorAll('.btnCheckin').forEach(btn=>{
+            btn.addEventListener('click', async()=>{
+              try{
+                const r = await apiPost('checkin', { userId: gUserId, meeting_id: btn.dataset.id });
+                if(r.ok){ toast('เช็คชื่อเรียบร้อย'); } else { toast('ผิดพลาด: '+(r.error||'')); }
+              }catch{ toast('เครือข่ายผิดพลาด'); }
+            });
+          });
+        }
+      }catch(err){ console.error(err); }
+    }
+
+    // ===== ENROLL (Pre-load capture) =====
+    $('btnEnroll').addEventListener('click', async ()=>{
+      try{
+        const os = liff.getOS();
+        const lang = navigator.language || '';
+        const device = deviceInfo();
+        const state = qs.get('state') || '';
+        const body = { userId: gUserId, displayName: gProfile?.displayName, pictureUrl: gProfile?.pictureUrl||'', os, lang, device, state, cid_opt: qs.get('cid')||'' };
+        const r = await apiPost('enroll', body);
+        if(r.ok){ $('enrollMsg').textContent = 'บันทึกสำเร็จ (enroll_id: '+r.enroll_id+')'; toast('บันทึก userId แล้ว'); }
+        else { $('enrollMsg').textContent = 'ผิดพลาด: ' + (r.error||'enroll_failed'); }
+      }catch(err){ $('enrollMsg').textContent = 'เครือข่ายผิดพลาด'; }
+    });
+
+    // ===== LINK (self-link) =====
+    $('btnLink').addEventListener('click', async ()=>{
+      const cid = $('f_cid').value.trim();
+      const dob = $('f_dob').value.trim();
+      if(cid.length!==13){ toast('กรอก CID 13 หลัก'); return; }
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(dob)){ toast('รูปแบบวันเกิดไม่ถูกต้อง'); return; }
+      try{
+        const r = await apiPost('link', { userId: gUserId, method:'dob', cid, dob, displayName: gProfile?.displayName, pictureUrl: gProfile?.pictureUrl||'' });
+        if(r.ok){
+          $('linkMsg').textContent = 'ผูกบัญชีสำเร็จ! กำลังโหลดข้อมูล…';
+          const init = await apiGet('init', { userId: gUserId });
+          if(init?.mapped){ renderProfile(init.volBasic, gProfile); hide('linkForm'); await loadMeetings(); setTab('profile'); setStatus('ผูกบัญชีแล้ว', 'ok'); }
+        } else {
+          $('linkMsg').textContent = 'ผิดพลาด: ' + (r.error||'link_failed');
+        }
+      }catch(err){ $('linkMsg').textContent = 'เครือข่ายผิดพลาด'; }
+    });
+
+    // ===== NAV EVENTS =====
+    $('btnRefresh').addEventListener('click', ()=> bootstrap());
+    $('tabEnroll').addEventListener('click', ()=> setTab('enroll'));
+    $('tabProfile').addEventListener('click', ()=> setTab('profile'));
+    $('tabMeet').addEventListener('click', ()=> setTab('meet'));
+
+    // ===== START =====
+    bootstrap();
+  </script>
+</body>
+</html>
