@@ -4,17 +4,21 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <meta name="theme-color" content="#16a34a"/>
-  <title>อสม. – ตรวจสอบ & ยืนยันตัวตน</title>
+  <title>อสม. – ตรวจสอบ & ยืนยัน + ประชุมประจำเดือน</title>
 
   <!-- LIFF + Tailwind -->
   <link rel="preconnect" href="https://static.line-scdn.net"/>
   <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = { theme: { extend: {
-      colors: { brand: { DEFAULT:'#16a34a', 600:'#16a34a' } },
-      boxShadow: { soft:'0 6px 24px rgba(0,0,0,.07)' }
-    }}};
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { brand: { DEFAULT:'#16a34a', 600:'#16a34a' }},
+          boxShadow: { soft:'0 6px 24px rgba(0,0,0,.07)' }
+        }
+      }
+    };
   </script>
 
   <!-- SweetAlert2 -->
@@ -45,14 +49,14 @@
       </div>
       <div class="flex-1 min-w-0">
         <div class="text-base font-semibold leading-5 line-clamp-1">อสม. – ระบบตรวจสอบ & ยืนยัน</div>
-        <div class="text-xs text-gray-500">ตรวจสอบก่อน ถ้าไม่พบจึงให้ยืนยัน</div>
+        <div class="text-xs text-gray-500">ตรวจสอบก่อน ถ้าไม่พบจึงให้ยืนยัน • มีตารางประชุม 12 เดือน</div>
       </div>
       <button id="btnRefresh" class="text-sm px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300">รีเฟรช</button>
     </div>
   </header>
 
   <!-- Main -->
-  <main class="max-w-md mx-auto p-4 pb-24">
+  <main class="max-w-md mx-auto p-4 pb-28">
     <div id="status" class="hidden mt-1 px-3 py-2 rounded-xl text-sm"></div>
 
     <!-- การ์ด: กำลังตรวจสอบ -->
@@ -105,22 +109,35 @@
         </button>
       </div>
     </section>
+
+    <!-- ประชุมประจำเดือน -->
+    <section id="meetCard" class="hidden mt-6 bg-white rounded-2xl shadow-soft border border-gray-100">
+      <div class="p-4">
+        <div class="flex items-center justify-between">
+          <div class="font-semibold">ประชุมประจำเดือน</div>
+          <select id="yearSelect" class="text-sm border border-gray-200 rounded-lg px-2 py-1"></select>
+        </div>
+        <div id="meetList" class="mt-3 grid gap-2"></div>
+      </div>
+    </section>
   </main>
 
   <!-- Bottom Bar -->
   <nav class="safe-bottom fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur border-t border-gray-200">
-    <div class="max-w-md mx-auto flex items-center justify-between px-4">
-      <button id="btnShowEnroll" class="py-3 text-gray-500 text-sm">ยืนยันตัวตน</button>
+    <div class="max-w-md mx-auto grid grid-cols-3">
+      <button id="btnShowEnroll"  class="py-3 text-gray-500 text-sm">ยืนยันตัวตน</button>
       <button id="btnShowProfile" class="py-3 text-emerald-700 text-sm">ข้อมูล อสม.</button>
+      <button id="btnShowMeet"    class="py-3 text-gray-500 text-sm">ประชุม</button>
     </div>
   </nav>
 
   <script>
     // ===== ใส่ค่าของคุณก่อนใช้งาน =====
     const LIFF_ID = '2008189191-jnqX2z8B';
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw32HUvnQsJ_Yvv49ZHKACjxG7zzg2xX5xQjMPT2FcpiFhB5gNAwFk-_hQizN9Kp-16/exec';
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8MmxER4F3XB6iwTQJt6sGR85gh3p3fFu6bx2baIBum28fHUw3mxtmmAKBbXpmVCwS/exec';
 
-    // ===== Utils =====
+
+    // ======= Utils =======
     const $ = (id)=> document.getElementById(id);
     const show = (id)=> $(id).classList.remove('hidden');
     const hide = (id)=> $(id).classList.add('hidden');
@@ -136,13 +153,14 @@
       el.classList.remove('hidden');
     };
 
-    // ===== API (no-preflight) =====
+    // ======= API (no-preflight style) =======
     async function apiGet(action, params = {}) {
       const u = new URL(APPS_SCRIPT_URL);
       u.searchParams.set('action', action);
       Object.entries(params).forEach(([k,v])=> u.searchParams.set(k, v));
       const res = await fetch(u.toString(), { method: 'GET' });
-      if(!res.ok) throw new Error('Network'); return res.json();
+      if(!res.ok) throw new Error('Network');
+      return res.json();
     }
     async function apiPost(action, body = {}) {
       const res = await fetch(APPS_SCRIPT_URL, {
@@ -150,10 +168,16 @@
         headers: { 'Content-Type':'text/plain;charset=utf-8' },
         body: JSON.stringify({ action, ...body })
       });
-      if(!res.ok) throw new Error('Network'); return res.json();
+      if(!res.ok) throw new Error('Network');
+      return res.json();
     }
 
-    // ===== UI helpers =====
+    // ======= UI Helpers =======
+    function showChecking(){ show('checkingCard'); hide('profileCard'); hide('enrollCard'); hide('meetCard'); }
+    function showProfile(){ hide('checkingCard'); show('profileCard'); hide('enrollCard'); hide('meetCard'); }
+    function showEnroll(){ hide('checkingCard'); hide('profileCard'); show('enrollCard'); hide('meetCard'); }
+    function showMeet(){ hide('checkingCard'); hide('enrollCard'); hide('profileCard'); show('meetCard'); }
+
     function renderProfile(p, dispName, picUrl){
       $('displayName').textContent = dispName || p['LINE_DISPLAY_NAME'] || '-';
       $('pic').src   = picUrl || p['LINE_PICTURE_URL'] || '';
@@ -171,11 +195,58 @@
       $('f_acc').textContent      = p['บัญชีปฎิบัติงานอสม.'] || '—';
       $('f_status').textContent   = p['สถานะ อสม.'] || '—';
     }
-    function showChecking(){ show('checkingCard'); hide('profileCard'); hide('enrollCard'); }
-    function showProfile(){ hide('checkingCard'); show('profileCard'); hide('enrollCard'); }
-    function showEnroll(){ hide('checkingCard'); hide('profileCard'); show('enrollCard'); }
 
-    // ===== App State =====
+    // ======= Meetings 12 months =======
+    function initYearSelector(defaultYear){
+      const ys = $('yearSelect');
+      if(ys.options.length) return;
+      const nowY = (new Date()).getFullYear();
+      const years = [nowY-1, nowY, nowY+1];
+      years.forEach(v=>{
+        const opt=document.createElement('option');
+        opt.value=v; opt.textContent=v;
+        if(v===defaultYear) opt.selected=true;
+        ys.appendChild(opt);
+      });
+      ys.addEventListener('change', ()=> loadMeetings12(Number(ys.value)));
+    }
+
+    async function loadMeetings12(year){
+      try{
+        loading(true);
+        const y = year || (Number($('yearSelect').value) || (new Date()).getFullYear());
+        const data = await apiGet('meetings12', { userId: gUserId, year: y });
+        if(!data.ok) throw new Error(data.error||'error');
+
+        initYearSelector(data.year);
+        // sync selection
+        [...$('yearSelect').options].forEach(o=> o.selected = (Number(o.value)===data.year));
+
+        const list = (data.months||[]).map(m=>{
+          const check = m.attended ?
+            '<span class="inline-flex items-center text-emerald-700 text-xs gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2 4.8 12l1.4-1.4L9 13.4l8.8-8.8L19.2 6z"/></svg>มาแล้ว</span>' :
+            '<span class="inline-flex items-center text-gray-400 text-xs gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22q-2.075 0-3.9-.788t-3.187-2.125Q3.575 16.75 2.788 14.925T2 11q0-2.075.788-3.9t2.125-3.188Q6.25 2.575 8.075 1.788T12 1q2.075 0 3.9.788t3.188 2.125q1.337 1.338 2.125 3.163T22 11q0 2.075-.788 3.9t-2.125 3.187q-1.338 1.337-3.163 2.125T12 22Z"/></svg>ยัง</span>';
+          const when = [m.date, m.time].filter(Boolean).join(' ');
+          const place = m.place || '';
+          return `
+            <div class="border border-gray-200 rounded-xl p-3 flex items-start justify-between">
+              <div class="min-w-0">
+                <div class="text-[15px] font-medium leading-5">${m.title || ('ประชุม '+m.month)}</div>
+                <div class="text-xs text-gray-500">${when}${when && place ? ' • ' : ''}${place}</div>
+              </div>
+              <div class="shrink-0">${check}</div>
+            </div>`;
+        }).join('');
+        $('meetList').innerHTML = list || '<div class="text-xs text-gray-500">ยังไม่มีกำหนดการ</div>';
+      }catch(e){
+        console.error(e);
+        $('meetList').innerHTML = '<div class="text-xs text-rose-600">โหลดกำหนดการไม่สำเร็จ</div>';
+      }finally{
+        loading(false);
+      }
+    }
+
+    // ======= App State / Bootstrap =======
     let gUserId='', gProfile=null;
 
     async function bootstrap(){
@@ -193,6 +264,7 @@
           setStatus('พบข้อมูลแล้ว','ok');
           renderProfile(init.profile, gProfile?.displayName, gProfile?.pictureUrl);
           showProfile();
+          await loadMeetings12(); // โหลดประชุมทันทีเมื่อพบข้อมูล
         }else{
           setStatus('ไม่พบข้อมูล กรุณายืนยันตัวตน','info');
           showEnroll();
@@ -206,7 +278,7 @@
       }
     }
 
-    // ===== Events =====
+    // ======= Events =======
     $('btnEnroll').addEventListener('click', async ()=>{
       const cid = ($('cidInput').value || '').trim();
       if(!/^\d{13}$/.test(cid)){
@@ -227,6 +299,7 @@
             renderProfile(init.profile, gProfile?.displayName, gProfile?.pictureUrl);
             setStatus('ยืนยันตัวตนแล้ว','ok');
             showProfile();
+            await loadMeetings12();
           }
         }else{
           let msg='ไม่สามารถยืนยันได้';
@@ -245,6 +318,7 @@
     $('btnRefresh').addEventListener('click', ()=> bootstrap());
     $('btnShowEnroll').addEventListener('click', ()=> showEnroll());
     $('btnShowProfile').addEventListener('click', ()=> showProfile());
+    $('btnShowMeet').addEventListener('click',   ()=> { showMeet(); loadMeetings12(Number($('yearSelect').value)||undefined); });
 
     // Start
     bootstrap();
