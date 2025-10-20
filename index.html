@@ -6,6 +6,8 @@
   <title>SMART CARE – OSM LIFF</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     body{ background: radial-gradient(80% 60% at 20% 10%, #ff7bd5 0%, #7b61ff 40%, #1abc9c 100%) fixed; }
     .card{ @apply bg-white rounded-3xl shadow-xl; }
@@ -17,13 +19,12 @@
 <body class="min-h-screen flex items-start justify-center p-4 safe-area">
   <div id="app" class="w-full max-w-sm">
 
-    <!-- Header -->
     <header class="flex items-center justify-between text-white/95 mb-4">
       <div class="text-lg font-semibold tracking-wide">SMART CARE</div>
       <div id="notifDot" class="w-3 h-3 rounded-full bg-yellow-300 animate-pulse"></div>
     </header>
 
-    <!-- Registration -->
+    <!-- Register -->
     <section id="view-register" class="card p-5 hidden">
       <div class="flex items-center gap-3">
         <img id="reg-avatar" class="w-12 h-12 rounded-full object-cover" src="" alt="">
@@ -49,7 +50,6 @@
 
     <!-- Home -->
     <section id="view-home" class="hidden">
-      <!-- Profile Card -->
       <div class="card p-5">
         <div class="flex items-center gap-3">
           <img id="pfp" class="w-14 h-14 rounded-2xl object-cover" src="" alt="">
@@ -60,46 +60,19 @@
             </div>
           </div>
         </div>
-        <div class="mt-4 grid grid-cols-2 gap-3">
-          <a class="card p-3 flex gap-3 items-center">
-            <div class="shrink-0 w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-              <!-- bell -->
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.25 18.25h-4.5m8.25-6A5.25 5.25 0 0 0 6.75 12.25v1.144c0 .764-.293 1.497-.818 2.047L4.5 16.75h15l-1.432-1.309a2.99 2.99 0 0 1-.818-2.047v-1.144z"/></svg>
-            </div>
-            <div class="text-sm">
-              <div class="font-semibold">ระบบการแจ้งเตือน</div>
-              <div class="text-gray-500">ติดตามงาน อสม.</div>
-            </div>
-          </a>
-          <a class="card p-3 flex gap-3 items-center">
-            <div class="shrink-0 w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <!-- doc -->
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m-7.5-12h6.75L18 8.25V19.5A1.5 1.5 0 0 1 16.5 21h-9A1.5 1.5 0 0 1 6 19.5V6A1.5 1.5 0 0 1 7.5 4.5z"/></svg>
-            </div>
-            <div class="text-sm">
-              <div class="font-semibold">ประวัติการทำงาน</div>
-              <div class="text-gray-500">บันทึก/ตรวจสอบ</div>
-            </div>
-          </a>
-        </div>
       </div>
 
-      <!-- Monthly Status -->
       <div class="mt-4 card p-5">
         <div class="flex items-center justify-between">
           <div class="font-semibold">สถานะการส่งแผน (รายเดือน)</div>
           <span class="chip bg-gray-100">ปีงบประมาณ</span>
         </div>
-
-        <div id="month-list" class="mt-3 divide-y">
-          <!-- rows injected -->
-        </div>
+        <div id="month-list" class="mt-3 divide-y"></div>
       </div>
 
       <div class="h-8"></div>
     </section>
 
-    <!-- Loader -->
     <div id="loader" class="flex items-center justify-center text-white mt-10">
       <svg class="animate-spin h-6 w-6 mr-2" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="white" stroke-width="4"></circle>
@@ -115,28 +88,21 @@
 const LIFF_ID  = '2008189191-jnqX2z8B';
 const API_BASE = 'https://script.google.com/macros/s/AKfycbyOs1VkVy2FaqrWS_bMg8tr89VtiZkmaPvRt8h1WesrLev6R_V7uLcdy9EocE9oHAKW/exec';
 
-/* ===== Utilities ===== */
+
+/* ===== Helpers ===== */
 const $ = s => document.querySelector(s);
-const show = id => { $(id).classList.remove('hidden'); };
-const hide = id => { $(id).classList.add('hidden'); };
-
-const MONTHS = ['ตุลาคม','พฤศจิกายน','ธันวาคม','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน'];
-
+const show = id => $(id).classList.remove('hidden');
+const hide = id => $(id).classList.add('hidden');
 function checkCID(x){ return /^\d{13}$/.test(String(x||'').trim()); }
-
 function rowTemplate(r){
-  // plan tick
   const tick = r.tick
     ? `<svg class="tick text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>`
     : `<svg class="tick text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>`;
-
   let chipCls = 'bg-gray-100 text-gray-600', chipTxt = 'รอตรวจสอบ';
   if (r.reportState === 'ok') { chipCls = 'bg-emerald-100 text-emerald-700'; chipTxt = 'ส่งรายงาน อสม.1 ถูกต้อง'; }
   else if (r.reportState === 'bad') { chipCls = 'bg-rose-100 text-rose-700'; chipTxt = 'ยังไม่ถูกต้อง'; }
-
   const planText = r.planStatus || 'ยังไม่ได้ส่ง';
   const planCls  = r.tick ? 'text-emerald-700' : 'text-amber-600';
-
   return `
   <div class="py-3 flex items-center justify-between">
     <div class="flex items-center gap-3">
@@ -153,13 +119,15 @@ function rowTemplate(r){
 async function apiGet(params){
   const url = new URL(API_BASE);
   Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  // GET เป็น simple request อยู่แล้ว → ไม่โดน preflight
   const res = await fetch(url.toString(), { method:'GET' });
   return res.json();
 }
 async function apiPost(body){
+  // ใช้ text/plain เพื่อเลี่ยง preflight CORS
   const res = await fetch(API_BASE, {
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:{ 'Content-Type':'text/plain;charset=utf-8' },
     body: JSON.stringify(body)
   });
   return res.json();
@@ -170,71 +138,70 @@ let liffProfile = null;
 let userId = '';
 let boundCID = '';
 
+function swalLoading(title='กำลังประมวลผล'){
+  Swal.fire({
+    title, allowOutsideClick:false, allowEscapeKey:false, didOpen: () => Swal.showLoading()
+  });
+}
+
 async function main(){
   try{
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isLoggedIn()) liff.login();
 
     const prof = await liff.getProfile();
-    liffProfile = prof;
-    userId = prof.userId;
+    liffProfile = prof; userId = prof.userId;
 
-    // ตรวจว่าลงทะเบียนแล้วหรือยัง
     const init = await apiGet({ action:'getorinit', uid:userId });
     if (!init.ok) throw new Error(init.error || 'init error');
 
     if (init.registered){
-      // มีข้อมูลแล้ว → โหลดสถานะ
       boundCID = init.profile.cid;
       await renderHome(boundCID, init.profile);
     } else {
-      // ยังไม่เคย → แสดงหน้า register
       $('#reg-avatar').src = prof.pictureUrl || '';
       $('#reg-name').textContent = prof.displayName || '-';
       hide('#loader'); show('#view-register');
     }
   }catch(err){
     hide('#loader');
-    alert('เกิดข้อผิดพลาด: ' + err.message);
+    Swal.fire('เกิดข้อผิดพลาด', err.message, 'error');
   }
 }
 
 async function renderHome(cid, infoFromInit=null){
-  hide('#loader');
-
-  // โหลดสถานะ
+  hide('#loader'); swalLoading('กำลังโหลดสถานะ');
   const st = await apiGet({ action:'status', cid });
-  if (!st.ok) { alert(st.error || 'โหลดสถานะไม่สำเร็จ'); return; }
+  Swal.close();
+  if (!st.ok) { Swal.fire('โหลดข้อมูลไม่สำเร็จ', st.error || '', 'error'); return; }
 
   const info = st.info || infoFromInit || {};
   $('#pfp').src = (info.linepic || liffProfile?.pictureUrl || '');
   $('#pf-name').textContent = info.name || liffProfile?.displayName || '-';
   $('#pf-cid').textContent = cid;
   $('#pf-moo').textContent = info.moo || '-';
-
   $('#month-list').innerHTML = st.months.map(rowTemplate).join('');
   show('#view-home');
 }
 
-// Register button
 $('#btn-register').addEventListener('click', async () => {
   const cid = $('#cid').value.trim();
-  if (!checkCID(cid)) { alert('กรุณากรอกเลขบัตรประชาชน 13 หลักให้ถูกต้อง'); return; }
+  if (!checkCID(cid)) { Swal.fire('ข้อมูลไม่ถูกต้อง','กรุณากรอกเลขบัตรประชาชน 13 หลัก','warning'); return; }
+  swalLoading('กำลังลงทะเบียน…');
 
-  hide('#btn-register'); // ป้องกันกดซ้ำ
-
-  const payload = {
+  const rs = await apiPost({
     action:'register',
     cid,
     uid: userId,
     linename: liffProfile?.displayName || '',
     linepic:  liffProfile?.pictureUrl || ''
-  };
-  const rs = await apiPost(payload);
-  if (!rs.ok) { alert(rs.error || 'ลงทะเบียนไม่สำเร็จ'); show('#btn-register'); return; }
+  });
+  Swal.close();
+
+  if (!rs.ok) { Swal.fire('ลงทะเบียนไม่สำเร็จ', rs.error || '', 'error'); return; }
 
   boundCID = cid;
-  // ไปหน้าหลักทันที
+  Swal.fire('สำเร็จ','ลงทะเบียนเรียบร้อย','success');
   await renderHome(boundCID);
 });
 
