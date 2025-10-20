@@ -11,61 +11,45 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-  /* พื้นหลัง + การ์ด */
+  /* พื้นหลังไล่สี */
   body{ background: radial-gradient(120% 140% at 0% 0%, #C084FC 0%, #A78BFA 30%, #8B5CF6 55%, #F472B6 90%) fixed; }
-  .neo{ box-shadow: 10px 12px 28px rgba(31,41,55,.18), -6px -6px 18px rgba(255,255,255,.4); }
-  .glass{ background: rgba(255,255,255,.78); backdrop-filter: blur(16px); }
   .safe-area{ padding-bottom: env(safe-area-inset-bottom); }
 
-  /* ====== ตาราง 3 คอลัมน์ จัดระเบียบแน่นอน ====== */
-  .listHeader, .listRow{
-    display:grid;
-    grid-template-columns: 135px 140px 1fr;  /* เดือน | สถานะ | รายงาน-อสม.1 */
-    column-gap: 12px;
-    align-items:center;
-  }
-  /* ขนาดจอเล็กลงให้คอลัมน์ปรับ */
-  @media (max-width: 380px){
-    .listHeader, .listRow{ grid-template-columns: 120px 128px 1fr; }
-  }
-  @media (max-width: 340px){
-    .listHeader, .listRow{ grid-template-columns: 110px 118px 1fr; }
-  }
+  /* การ์ดกลาส + นีโอ */
+  .glass{ background: rgba(255,255,255,.78); backdrop-filter: blur(16px); }
+  .neo{ box-shadow: 10px 12px 28px rgba(31,41,55,.18), -6px -6px 18px rgba(255,255,255,.4); }
 
-  /* เซลล์เดือน */
-  .monthCell{ display:flex; align-items:center; gap:10px; min-height:64px; }
-  .tick{ width:26px; height:26px; }
-
-  /* ชิปสถานะ/ผลตรวจสอบ — ทำให้เท่ากัน อ่านง่าย */
-  .chip{
-    display:inline-block;
-    min-width: 118px;    /* กว้างพอ ไม่ส่าย */
-    padding: 10px 12px;
-    border-radius: 9999px;
-    font-size: 15px;
-    line-height: 1;
-    font-weight: 700;
-    text-align:center;
-    white-space: nowrap;
+  /* การ์ดเดือน */
+  .month-card{
+    border-radius: 22px; padding: 14px; background: rgba(255,255,255,.9);
+    box-shadow: 0 10px 22px rgba(168,85,247,.18);
   }
-  .chip-plan-ok    { background:#D1FAE5; color:#065F46; }
-  .chip-plan-warn  { background:#FEF3C7; color:#92400E; }
-  .chip-check-wait { background:#E5E7EB; color:#374151; }
-  .chip-check-ok   { background:#D1FAE5; color:#065F46; }
-  .chip-check-bad  { background:#FEE2E2; color:#991B1B; }
+  .month-badge{
+    display:inline-flex; align-items:center; gap:8px;
+    font-weight:800; font-size:18px; color:#4c1d95;
+    background: linear-gradient(135deg,#ede9fe,#ffe4f0); padding:8px 12px; border-radius:14px;
+  }
+  .tick{ width:26px; height:26px }
+  .chip{ display:inline-block; min-width: 128px; text-align:center; padding:10px 12px; border-radius:9999px; font-weight:700; font-size:15px; white-space:nowrap; }
+  .chip-plan-ok{   background:#D1FAE5; color:#065F46; }
+  .chip-plan-warn{ background:#FEF3C7; color:#92400E; }
+  .chip-check-ok{  background:#D1FAE5; color:#065F46; }
+  .chip-check-bad{ background:#FEE2E2; color:#991B1B; }
+  .chip-check-wait{background:#E5E7EB; color:#374151; }
 
-  /* หัวตารางแบบ sticky */
-  .stickyHead{ position: sticky; top: 8px; z-index: 5; }
+  /* กริดการ์ด: มือถือ = 1 คอลัมน์, จอกว้างขึ้น = 2 */
+  .cards{ display:grid; grid-template-columns: 1fr; gap:14px; }
+  @media (min-width: 430px){ .cards{ grid-template-columns: 1fr 1fr; } }
 
-  /* ฟอนต์ใหญ่ขึ้นทั้งหน้าเพื่ออ่านง่าย */
-  .big{ font-size: clamp(16px, 3.8vw, 18px); }
-  .bigger{ font-size: clamp(18px, 4.2vw, 20px); }
+  /* ตัวหนังสือใหญ่สบายตา */
+  .big { font-size: clamp(16px, 3.8vw, 18px); }
+  .bigger { font-size: clamp(18px, 4.2vw, 20px); }
 </style>
 </head>
 <body class="min-h-screen flex items-start justify-center p-4 safe-area">
-  <div class="w-full max-w-md">  <!-- ขยาย max width เล็กน้อยให้หายอึดอัด -->
+  <div class="w-full max-w-md">
 
-    <!-- Top bar -->
+    <!-- Header -->
     <header class="text-white flex items-center justify-between">
       <div class="text-2xl font-semibold tracking-wide">Smart Care</div>
       <div class="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center">
@@ -92,17 +76,12 @@
       </div>
     </section>
 
-    <!-- ตารางรวมสถานะ + ผลตรวจสอบ -->
-    <section class="glass neo rounded-3xl mt-4 p-4">
-      <div class="stickyHead bg-white/70 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 listHeader">
-        <div>เดือน</div>
-        <div class="text-center">สถานะ</div>
-        <div class="text-right">รายงาน-อสม.1</div>
-      </div>
-      <div id="month-list" class="mt-2 divide-y"></div>
+    <!-- การ์ดแยกเดือน -->
+    <section class="mt-4">
+      <div id="cards" class="cards"></div>
     </section>
 
-    <!-- Register (first time) -->
+    <!-- Register (ครั้งแรก) -->
     <section id="view-register" class="glass neo rounded-3xl mt-4 p-5 hidden">
       <div class="flex items-center gap-3">
         <img id="reg-avatar" class="w-12 h-12 rounded-2xl object-cover" src="" alt="">
@@ -138,6 +117,7 @@
 const LIFF_ID  = '2008189191-jnqX2z8B';
 const API_BASE = 'https://script.google.com/macros/s/AKfycbxzSdlRAmekNHmt8AkyyO09lv7Xa-cWl_7oyd3P7ng3ybcaOeEsqOo95yPw9IIThR8j/exec';
 
+
 /* ===== Helpers ===== */
 const $ = s => document.querySelector(s);
 const show = el => $(el).classList.remove('hidden');
@@ -150,8 +130,9 @@ function tick(on){
     ? `<svg class="tick text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>`
     : `<svg class="tick text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>`;
 }
-/* แถวรวม: จัดคอลัมน์ตรงด้วย .listRow */
-function rowCombined(r){
+
+/* การ์ดเดือน */
+function cardTemplate(r){
   const planTxt = r.planStatus || 'ยังไม่ได้ส่ง';
   const planCls = r.tick ? 'chip-plan-ok' : 'chip-plan-warn';
   let chkTxt='รอตรวจสอบ', chkCls='chip-check-wait';
@@ -159,18 +140,22 @@ function rowCombined(r){
   else if (r.reportState==='bad'){ chkTxt='ไม่ถูกต้อง'; chkCls='chip-check-bad'; }
 
   return `
-    <div class="listRow py-3">
-      <div class="monthCell">
-        ${tick(r.tick)}
-        <div class="font-semibold big">${r.month}</div>
+    <div class="month-card">
+      <div class="flex items-center justify-between">
+        <div class="month-badge">${tick(r.tick)} <span>${r.month}</span></div>
       </div>
-      <div class="text-center">
-        <span class="chip ${planCls}">${planTxt}</span>
+      <div class="mt-3 grid grid-cols-1 gap-2">
+        <div class="flex items-center justify-between">
+          <div class="text-slate-500 big">สถานะส่งแผน</div>
+          <span class="chip ${planCls}">${planTxt}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="text-slate-500 big">รายงาน-อสม.1</div>
+          <span class="chip ${chkCls}">${chkTxt}</span>
+        </div>
       </div>
-      <div class="text-right">
-        <span class="chip ${chkCls}">รายงาน-อสม.1: ${chkTxt}</span>
-      </div>
-    </div>`;
+    </div>
+  `;
 }
 
 /* ===== API (simple request → เลี่ยง CORS) ===== */
@@ -237,7 +222,7 @@ async function renderHome(cid){
   $('#hero-moo').textContent = st.info?.moo || '-';
 
   hide('#loader');
-  $('#month-list').innerHTML = monthsCache.map(rowCombined).join('');
+  $('#cards').innerHTML = monthsCache.map(cardTemplate).join('');
 }
 
 /* ลงทะเบียนครั้งแรก */
