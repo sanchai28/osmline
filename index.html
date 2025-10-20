@@ -11,32 +11,13 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-  /* พื้นหลังไล่สีแบบภาพตัวอย่าง */
   body{
     background: radial-gradient(120% 140% at 0% 0%, #C084FC 0%, #A78BFA 30%, #8B5CF6 55%, #F472B6 90%) fixed;
   }
-  /* การ์ดนูน + กลาส */
-  .neo{
-    box-shadow: 8px 8px 20px rgba(31,41,55,.18), -8px -8px 20px rgba(255,255,255,.35);
-  }
-  .glass{
-    background: rgba(255,255,255,.72);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-  }
-  .pill{
-    transition: .2s; 
-  }
-  .pill.active{
-    background: linear-gradient(135deg,#A78BFA 0%,#F472B6 100%);
-    color: #fff;
-    box-shadow: 0 8px 18px rgba(168,85,247,.25);
-  }
-  .icon-bubble{
-    width:48px;height:48px;border-radius:15px;
-    display:flex;align-items:center;justify-content:center;
-  }
+  .neo{ box-shadow: 8px 8px 20px rgba(31,41,55,.18), -8px -8px 20px rgba(255,255,255,.35); }
+  .glass{ background: rgba(255,255,255,.72); backdrop-filter: blur(14px); }
   .tick{ width:22px;height:22px }
+  .chip{ padding:.35rem .6rem; border-radius:9999px; font-size:.72rem; font-weight:600; white-space:nowrap; }
   .safe-area{ padding-bottom: env(safe-area-inset-bottom) }
 </style>
 </head>
@@ -47,7 +28,6 @@
     <header class="text-white flex items-center justify-between">
       <div class="text-xl font-semibold tracking-wide">Smart Care</div>
       <div class="w-8 h-8 rounded-full bg-white/25 flex items-center justify-center">
-        <!-- dot menu -->
         <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" fill="none" class="opacity-90">
           <path stroke-linecap="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01"/>
         </svg>
@@ -65,59 +45,22 @@
       </div>
       <div class="mt-4 rounded-2xl p-4 text-white"
            style="background: linear-gradient(135deg,#A78BFA 0%,#F472B6 100%); box-shadow:0 8px 18px rgba(168,85,247,.35);">
-        <div class="text-xs opacity-90">เลขบัตรประชาชน</div>
+        <div class="text-xs/relaxed opacity-90">เลขบัตรประชาชน</div>
         <div id="hero-cid" class="text-xl font-bold tracking-wide">-</div>
         <div class="text-xs mt-1 opacity-90">หมู่บ้าน <span id="hero-moo">-</span></div>
       </div>
-
-      <!-- Quick actions -->
-      <div class="grid grid-cols-4 gap-3 mt-4">
-        <div class="text-center">
-          <div class="icon-bubble glass neo">
-            <svg viewBox="0 0 24 24" class="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5h18M3 12h18M3 16.5h18"/>
-            </svg>
-          </div>
-          <div class="text-[11px] mt-1 text-slate-600">เมนู</div>
-        </div>
-        <div class="text-center">
-          <div class="icon-bubble glass neo">
-            <svg viewBox="0 0 24 24" class="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h8M8 12h8M8 17h8M6 5v14M18 5v14"/>
-            </svg>
-          </div>
-          <div class="text-[11px] mt-1 text-slate-600">ประวัติ</div>
-        </div>
-        <div class="text-center">
-          <div class="icon-bubble glass neo">
-            <svg viewBox="0 0 24 24" class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m-7 7h14"/>
-            </svg>
-          </div>
-          <div class="text-[11px] mt-1 text-slate-600">ส่งแผน</div>
-        </div>
-        <div class="text-center">
-          <div class="icon-bubble glass neo">
-            <svg viewBox="0 0 24 24" class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553 2.276A2 2 0 0121 14.09V18a2 2 0 01-2 2h-2M9 10L4.447 12.276A2 2 0 003 14.09V18a2 2 0 002 2h2M12 6v6"/>
-            </svg>
-          </div>
-          <div class="text-[11px] mt-1 text-slate-600">แจ้งเตือน</div>
-        </div>
-      </div>
     </section>
 
-    <!-- Segment tab -->
-    <section class="glass neo rounded-3xl mt-4 p-2">
-      <div class="bg-white/70 rounded-2xl p-1 flex">
-        <button id="tab-plan"  class="w-1/2 pill rounded-xl py-2 text-sm font-medium active">สถานะแผน</button>
-        <button id="tab-check" class="w-1/2 pill rounded-xl py-2 text-sm font-medium text-slate-600">ผลตรวจสอบ</button>
+    <!-- Combined Status List -->
+    <section class="glass neo rounded-3xl mt-4 p-4">
+      <!-- header row -->
+      <div class="bg-white/70 rounded-xl px-3 py-2 text-[11px] font-semibold text-slate-600 grid"
+           style="grid-template-columns: 1fr 1fr 1fr;">
+        <div>เดือน</div>
+        <div class="text-center">สถานะ</div>
+        <div class="text-right">รายงาน-อสม.1</div>
       </div>
-    </section>
-
-    <!-- List -->
-    <section class="glass neo rounded-3xl mt-3 p-4">
-      <div id="month-list" class="divide-y"></div>
+      <div id="month-list" class="mt-2 divide-y"></div>
     </section>
 
     <!-- Register (first time) -->
@@ -156,6 +99,7 @@
 const LIFF_ID  = '2008189191-jnqX2z8B';
 const API_BASE = 'https://script.google.com/macros/s/AKfycbxzSdlRAmekNHmt8AkyyO09lv7Xa-cWl_7oyd3P7ng3ybcaOeEsqOo95yPw9IIThR8j/exec';
 
+
 /* ===== Helpers ===== */
 const $ = s => document.querySelector(s);
 const show = el => $(el).classList.remove('hidden');
@@ -163,68 +107,55 @@ const hide = el => $(el).classList.add('hidden');
 const onlyDigit = s => String(s||'').replace(/[^\d]/g,'');
 const okCID = s => onlyDigit(s).length===13;
 
-function chip(text, cls){
-  return `<span class="px-2.5 py-1 rounded-full text-[11px] font-medium ${cls}">${text}</span>`;
-}
-function tickSVG(on){
+function tick(on){
   return on
     ? `<svg class="tick text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>`
     : `<svg class="tick text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>`;
 }
-function iconFolder(color){
-  return `<svg viewBox="0 0 24 24" class="w-9 h-9 ${color}" fill="currentColor">
-    <path d="M3 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V6z"/>
-  </svg>`;
-}
+function chip(txt, cls){ return `<span class="chip ${cls}">${txt}</span>`; }
 
-function rowPlan(r){
-  const left = `<div class="flex items-center gap-3">${tickSVG(r.tick)}<div><div class="font-medium">${r.month}</div><div class="text-xs ${r.tick?'text-emerald-700':'text-amber-600'}">สถานะ: ${r.planStatus||'ยังไม่ได้ส่ง'}</div></div></div>`;
-  const right = r.tick ? chip('ส่งแล้ว','bg-emerald-100 text-emerald-700') : chip('ยังไม่ได้ส่ง','bg-amber-100 text-amber-700');
-  return `<div class="py-3 flex items-center justify-between">${left}${right}</div>`;
-}
-function rowCheck(r){
-  let tag = chip('รอตรวจสอบ','bg-gray-100 text-gray-600');
-  if (r.reportState==='ok')  tag = chip('ส่งรายงาน อสม.1 ถูกต้อง','bg-emerald-100 text-emerald-700');
-  if (r.reportState==='bad') tag = chip('ยังไม่ถูกต้อง','bg-rose-100 text-rose-700');
-  const left = `<div class="flex items-center gap-3">${iconFolder('text-violet-500')}<div><div class="font-medium">${r.month}</div><div class="text-xs text-slate-500">รายงาน-อสม.1</div></div></div>`;
-  return `<div class="py-3 flex items-center justify-between">${left}${tag}</div>`;
+/* เดือนรวมสถานะ + ผลตรวจสอบ (แถวเดียว) */
+function rowCombined(r){
+  // คอลัมน์กลาง = สถานะส่งแผน (+ติ๊ก)
+  const planTxt = r.planStatus || 'ยังไม่ได้ส่ง';
+  const planCls = r.tick ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700';
+  // คอลัมน์ขวา = ผลตรวจสอบ อสม.1
+  let chkTxt = 'รอตรวจสอบ', chkCls = 'bg-gray-100 text-gray-600';
+  if (r.reportState==='ok'){ chkTxt = 'ถูกต้อง'; chkCls = 'bg-emerald-100 text-emerald-700'; }
+  else if (r.reportState==='bad'){ chkTxt = 'ไม่ถูกต้อง'; chkCls = 'bg-rose-100 text-rose-700'; }
+
+  return `
+    <div class="py-3 grid items-center gap-2" style="grid-template-columns: 1fr 1fr 1fr;">
+      <div class="flex items-center gap-3">
+        ${tick(r.tick)}
+        <div class="font-medium">${r.month}</div>
+      </div>
+      <div class="text-center">${chip(planTxt, planCls)}</div>
+      <div class="text-right">${chip('รายงาน-อสม.1: '+chkTxt, chkCls)}</div>
+    </div>
+  `;
 }
 
 /* ===== API (simple request → เลี่ยง CORS) ===== */
 async function apiGet(params){
   const url = new URL(API_BASE);
-  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k, v));
   const res = await fetch(url.toString(), { method:'GET' });
   return res.json();
 }
 async function apiPost(body){
   const res = await fetch(API_BASE, {
     method:'POST',
-    headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // simple request
+    headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // simple request (no preflight)
     body: JSON.stringify(body)
   });
   return res.json();
 }
 
-/* ===== App State ===== */
+/* ===== App State & Flow ===== */
 let liffProfile=null, userId='', boundCID='';
-let monthsCache=[];           // จาก backend
-let currentTab='plan';        // 'plan' | 'check'
+let monthsCache=[];
 
-function renderList(){
-  const html = monthsCache.map(m => currentTab==='plan' ? rowPlan(m) : rowCheck(m)).join('');
-  $('#month-list').innerHTML = html || `<div class="py-6 text-center text-slate-500">ไม่มีข้อมูล</div>`;
-}
-function activateTab(which){
-  currentTab = which;
-  $('#tab-plan').classList.toggle('active', which==='plan');
-  $('#tab-check').classList.toggle('active', which==='check');
-  renderList();
-}
-$('#tab-plan').addEventListener('click', () => activateTab('plan'));
-$('#tab-check').addEventListener('click', () => activateTab('check'));
-
-/* ===== Flow ===== */
 function loading(title='กำลังประมวลผล'){
   Swal.fire({title, allowOutsideClick:false, allowEscapeKey:false, didOpen:()=>Swal.showLoading()});
 }
@@ -246,14 +177,12 @@ async function main(){
       $('#hero-name').textContent = init.profile.linename || prof.displayName || '-';
       await renderHome(boundCID);
     }else{
-      hide('#loader');
-      show('#view-register');
+      hide('#loader'); show('#view-register');
       $('#reg-avatar').src = prof.pictureUrl || '';
       $('#reg-name').textContent = prof.displayName || '-';
     }
   }catch(err){
-    hide('#loader');
-    Swal.fire('เกิดข้อผิดพลาด', err.message, 'error');
+    hide('#loader'); Swal.fire('เกิดข้อผิดพลาด', err.message, 'error');
   }
 }
 
@@ -271,7 +200,7 @@ async function renderHome(cid){
   $('#hero-moo').textContent = st.info?.moo || '-';
 
   hide('#loader');
-  renderList();
+  $('#month-list').innerHTML = monthsCache.map(rowCombined).join('');
 }
 
 /* first-time register */
@@ -290,9 +219,6 @@ $('#btn-register').addEventListener('click', async ()=>{
   if (!rs.ok){ Swal.fire('ลงทะเบียนไม่สำเร็จ', rs.error||'', 'error'); return; }
   boundCID = cid;
   Swal.fire('สำเร็จ','ลงทะเบียนเรียบร้อย','success');
-  // ไปหน้าหลัก
-  $('#hero-avatar').src = liffProfile?.pictureUrl || '';
-  $('#hero-name').textContent = liffProfile?.displayName || '-';
   await renderHome(boundCID);
 });
 
