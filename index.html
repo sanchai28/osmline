@@ -1,327 +1,244 @@
 <!doctype html>
-<html lang="th" class="h-full touch-manipulation">
+<html lang="th">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <meta name="theme-color" content="#16a34a"/>
-  <title>อสม. – ตรวจสอบ & ยืนยัน + ประชุมประจำเดือน</title>
-
-  <!-- LIFF + Tailwind -->
-  <link rel="preconnect" href="https://static.line-scdn.net"/>
-  <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>SMART CARE – OSM LIFF</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: { brand: { DEFAULT:'#16a34a', 600:'#16a34a' }},
-          boxShadow: { soft:'0 6px 24px rgba(0,0,0,.07)' }
-        }
-      }
-    };
-  </script>
-
-  <!-- SweetAlert2 -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
   <style>
-    :root{--safe-top:env(safe-area-inset-top);--safe-bottom:env(safe-area-inset-bottom)}
-    .safe-top{padding-top:max(.5rem,var(--safe-top))}
-    .safe-bottom{padding-bottom:max(.75rem,var(--safe-bottom))}
-    .line-clamp-1{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
-    .fade-in{animation:fade-in .2s ease both}
-    @keyframes fade-in{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:none}}
-    /* Spinner overlay */
-    #loadingOverlay{position:fixed;inset:0;background:rgba(255,255,255,.65);backdrop-filter:saturate(120%) blur(2px);display:none;z-index:9999}
-    .spinner{width:46px;height:46px;border:4px solid rgba(16,185,129,.25);border-top-color:#10b981;border-radius:50%;animation:spin .8s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
+    body{ background: radial-gradient(80% 60% at 20% 10%, #ff7bd5 0%, #7b61ff 40%, #1abc9c 100%) fixed; }
+    .card{ @apply bg-white rounded-3xl shadow-xl; }
+    .chip{ @apply text-xs px-2 py-1 rounded-full; }
+    .tick{ width: 22px; height: 22px; }
+    .safe-area{ padding-bottom: env(safe-area-inset-bottom); }
   </style>
 </head>
-<body class="h-full bg-gray-50 text-gray-900">
-  <!-- Loading overlay -->
-  <div id="loadingOverlay" class="grid place-items-center"><div class="spinner"></div></div>
+<body class="min-h-screen flex items-start justify-center p-4 safe-area">
+  <div id="app" class="w-full max-w-sm">
 
-  <!-- Header -->
-  <header class="safe-top sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-gray-200">
-    <div class="max-w-md mx-auto flex items-center gap-3 p-3">
-      <div class="w-9 h-9 rounded-xl grid place-items-center bg-emerald-100 text-emerald-700">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5 21q-1.25 0-2.125-.875T2 18q0-3.35 2.325-5.675Q6.65 10 10 10h6q.825 0 1.413.587T18 12v2q0 2.9-2.05 4.95T11 21H5Zm14-9q-1.65 0-2.825-1.175T15 8q0-1.65 1.175-2.825T19 4q1.65 0 2.825 1.175T23 8q0 1.65-1.175 2.825T19 12Z"/></svg>
-      </div>
-      <div class="flex-1 min-w-0">
-        <div class="text-base font-semibold leading-5 line-clamp-1">อสม. – ระบบตรวจสอบ & ยืนยัน</div>
-        <div class="text-xs text-gray-500">ตรวจสอบก่อน ถ้าไม่พบจึงให้ยืนยัน • มีตารางประชุม 12 เดือน</div>
-      </div>
-      <button id="btnRefresh" class="text-sm px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300">รีเฟรช</button>
-    </div>
-  </header>
+    <!-- Header -->
+    <header class="flex items-center justify-between text-white/95 mb-4">
+      <div class="text-lg font-semibold tracking-wide">SMART CARE</div>
+      <div id="notifDot" class="w-3 h-3 rounded-full bg-yellow-300 animate-pulse"></div>
+    </header>
 
-  <!-- Main -->
-  <main class="max-w-md mx-auto p-4 pb-28">
-    <div id="status" class="hidden mt-1 px-3 py-2 rounded-xl text-sm"></div>
-
-    <!-- การ์ด: กำลังตรวจสอบ -->
-    <section id="checkingCard" class="mt-4 bg-white rounded-2xl shadow-soft border border-gray-100">
-      <div class="p-5 flex items-center gap-3">
-        <div class="spinner" style="width:28px;height:28px;border-width:3px"></div>
-        <div>
-          <div class="font-semibold">กำลังตรวจสอบข้อมูล…</div>
-          <div class="text-xs text-gray-500">โปรดรอสักครู่ ระบบกำลังค้นหาข้อมูลของคุณ</div>
+    <!-- Registration -->
+    <section id="view-register" class="card p-5 hidden">
+      <div class="flex items-center gap-3">
+        <img id="reg-avatar" class="w-12 h-12 rounded-full object-cover" src="" alt="">
+        <div class="font-semibold leading-tight">
+          <div id="reg-name">-</div>
+          <div class="text-xs text-gray-500">ลงทะเบียนใช้งานครั้งแรก</div>
         </div>
       </div>
+
+      <div class="mt-4">
+        <label class="block text-sm font-medium mb-1">หมายเลขบัตรประชาชน (13 หลัก)</label>
+        <input id="cid" inputmode="numeric" maxlength="13"
+               class="w-full rounded-2xl border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+               placeholder="กรอกเลขบัตรประชาชน" />
+        <p class="text-xs text-gray-500 mt-1">* ใช้สำหรับจับคู่ข้อมูลกับระบบ อสม.</p>
+      </div>
+
+      <button id="btn-register"
+              class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-2xl active:scale-[0.99]">
+        ยืนยันลงทะเบียน
+      </button>
     </section>
 
-    <!-- โปรไฟล์ (โชว์เมื่อพบข้อมูล) -->
-    <section id="profileCard" class="hidden mt-4 bg-white rounded-2xl shadow-soft border border-gray-100">
-      <div class="p-4 flex items-center gap-3">
-        <img id="pic" class="w-14 h-14 rounded-2xl object-cover bg-gray-100" alt="profile"/>
-        <div class="min-w-0">
-          <div id="displayName" class="font-semibold leading-5 line-clamp-1">—</div>
-          <div id="cid" class="text-xs text-gray-500">CID: —</div>
+    <!-- Home -->
+    <section id="view-home" class="hidden">
+      <!-- Profile Card -->
+      <div class="card p-5">
+        <div class="flex items-center gap-3">
+          <img id="pfp" class="w-14 h-14 rounded-2xl object-cover" src="" alt="">
+          <div class="grow">
+            <div id="pf-name" class="font-semibold text-lg leading-tight">-</div>
+            <div class="text-sm text-gray-500">
+              <span id="pf-cid">-</span> · หมู่ <span id="pf-moo">-</span>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-3">
+          <a class="card p-3 flex gap-3 items-center">
+            <div class="shrink-0 w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+              <!-- bell -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.25 18.25h-4.5m8.25-6A5.25 5.25 0 0 0 6.75 12.25v1.144c0 .764-.293 1.497-.818 2.047L4.5 16.75h15l-1.432-1.309a2.99 2.99 0 0 1-.818-2.047v-1.144z"/></svg>
+            </div>
+            <div class="text-sm">
+              <div class="font-semibold">ระบบการแจ้งเตือน</div>
+              <div class="text-gray-500">ติดตามงาน อสม.</div>
+            </div>
+          </a>
+          <a class="card p-3 flex gap-3 items-center">
+            <div class="shrink-0 w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+              <!-- doc -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m-7.5-12h6.75L18 8.25V19.5A1.5 1.5 0 0 1 16.5 21h-9A1.5 1.5 0 0 1 6 19.5V6A1.5 1.5 0 0 1 7.5 4.5z"/></svg>
+            </div>
+            <div class="text-sm">
+              <div class="font-semibold">ประวัติการทำงาน</div>
+              <div class="text-gray-500">บันทึก/ตรวจสอบ</div>
+            </div>
+          </a>
         </div>
       </div>
-      <div class="px-4 pb-4 grid grid-cols-2 gap-3 text-sm">
-        <div class="p-3 rounded-xl bg-gray-50"><div class="text-gray-500 text-xs">ชื่อ-นามสกุล</div><div id="f_fullname" class="font-medium break-words">—</div></div>
-        <div class="p-3 rounded-xl bg-gray-50"><div class="text-gray-500 text-xs">วันเกิด</div><div id="f_dob" class="font-medium break-words">—</div></div>
-        <div class="p-3 rounded-xl bg-gray-50 col-span-2"><div class="text-gray-500 text-xs">ที่อยู่</div><div id="f_addr" class="font-medium break-words">—</div></div>
-        <div class="p-3 rounded-xl bg-gray-50"><div class="text-gray-500 text-xs">หมู่ที่</div><div id="f_moo" class="font-medium">—</div></div>
-        <div class="p-3 rounded-xl bg-gray-50"><div class="text-gray-500 text-xs">ตำบล</div><div id="f_tambon" class="font-medium">—</div></div>
-        <div class="p-3 rounded-xl bg-gray-50"><div class="text-gray-500 text-xs">อำเภอ</div><div id="f_amphoe" class="font-medium">—</div></div>
-        <div class="p-3 rounded-xl bg-gray-50"><div class="text-gray-500 text-xs">จังหวัด</div><div id="f_changwat" class="font-medium">—</div></div>
-        <div class="p-3 rounded-xl bg-gray-50"><div class="text-gray-500 text-xs">เลขสถานบริการ</div><div id="f_fac" class="font-medium">—</div></div>
-        <div class="p-3 rounded-xl bg-gray-50"><div class="text-gray-500 text-xs">วันที่ขึ้นทะเบียน</div><div id="f_reg" class="font-medium">—</div></div>
-        <div class="p-3 rounded-xl bg-gray-50"><div class="text-gray-500 text-xs">เบอร์โทรศัพท์</div><div id="f_phone" class="font-medium">—</div></div>
-        <div class="p-3 rounded-xl bg-gray-50"><div class="text-gray-500 text-xs">บัญชีปฎิบัติงานอสม.</div><div id="f_acc" class="font-medium break-words">—</div></div>
-        <div class="p-3 rounded-xl bg-gray-50"><div class="text-gray-500 text-xs">สถานะ อสม.</div><div id="f_status" class="font-medium">—</div></div>
-      </div>
-    </section>
 
-    <!-- ฟอร์มยืนยัน (โชว์เมื่อไม่พบข้อมูล) -->
-    <section id="enrollCard" class="hidden mt-6 bg-white rounded-2xl shadow-soft border border-gray-100">
-      <div class="p-4">
-        <div class="font-semibold mb-1">ยืนยันตัวตนใน LINE</div>
-        <p class="text-xs text-gray-500 mb-3">กรอก <b>CID</b> เพื่อผูกกับ LINE ของคุณ (จะบันทึกชื่อและรูปโปรไฟล์ด้วย)</p>
-        <label class="block text-xs text-gray-600">หมายเลขบัตรประชาชน (13 หลัก)</label>
-        <input id="cidInput" inputmode="numeric" maxlength="13"
-               class="mt-1 w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-               placeholder="เช่น 1169800190675"/>
-        <button id="btnEnroll" class="w-full mt-3 py-3 rounded-xl bg-emerald-600 text-white font-medium active:scale-[.99]">
-          ยืนยันตัวตนใน LINE
-        </button>
-      </div>
-    </section>
-
-    <!-- ประชุมประจำเดือน -->
-    <section id="meetCard" class="hidden mt-6 bg-white rounded-2xl shadow-soft border border-gray-100">
-      <div class="p-4">
+      <!-- Monthly Status -->
+      <div class="mt-4 card p-5">
         <div class="flex items-center justify-between">
-          <div class="font-semibold">ประชุมประจำเดือน</div>
-          <select id="yearSelect" class="text-sm border border-gray-200 rounded-lg px-2 py-1"></select>
+          <div class="font-semibold">สถานะการส่งแผน (รายเดือน)</div>
+          <span class="chip bg-gray-100">ปีงบประมาณ</span>
         </div>
-        <div id="meetList" class="mt-3 grid gap-2"></div>
+
+        <div id="month-list" class="mt-3 divide-y">
+          <!-- rows injected -->
+        </div>
       </div>
+
+      <div class="h-8"></div>
     </section>
-  </main>
 
-  <!-- Bottom Bar -->
-  <nav class="safe-bottom fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur border-t border-gray-200">
-    <div class="max-w-md mx-auto grid grid-cols-3">
-      <button id="btnShowEnroll"  class="py-3 text-gray-500 text-sm">ยืนยันตัวตน</button>
-      <button id="btnShowProfile" class="py-3 text-emerald-700 text-sm">ข้อมูล อสม.</button>
-      <button id="btnShowMeet"    class="py-3 text-gray-500 text-sm">ประชุม</button>
+    <!-- Loader -->
+    <div id="loader" class="flex items-center justify-center text-white mt-10">
+      <svg class="animate-spin h-6 w-6 mr-2" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="white" stroke-width="4"></circle>
+        <path class="opacity-75" fill="white" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+      </svg>
+      <span>กำลังโหลด…</span>
     </div>
-  </nav>
 
-  <script>
-    // ===== ใส่ค่าของคุณก่อนใช้งาน =====
-    const LIFF_ID = '2008189191-jnqX2z8B';
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8MmxER4F3XB6iwTQJt6sGR85gh3p3fFu6bx2baIBum28fHUw3mxtmmAKBbXpmVCwS/exec';
+  </div>
 
+<script>
+/* ===== Config (ใส่ค่าจริง) ===== */
+const LIFF_ID  = '2008189191-jnqX2z8B';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbyOs1VkVy2FaqrWS_bMg8tr89VtiZkmaPvRt8h1WesrLev6R_V7uLcdy9EocE9oHAKW/exec';
 
-    // ======= Utils =======
-    const $ = (id)=> document.getElementById(id);
-    const show = (id)=> $(id).classList.remove('hidden');
-    const hide = (id)=> $(id).classList.add('hidden');
-    const loading = (on)=> $('loadingOverlay').style.display = on ? 'grid' : 'none';
-    const setStatus=(msg,type='info')=>{
-      const el=$('status');
-      el.textContent = msg || '';
-      el.className='mt-1 px-3 py-2 rounded-xl text-sm '+(
-        type==='ok'  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-        type==='err' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-                       'bg-gray-50 text-gray-700 border border-gray-200'
-      );
-      el.classList.remove('hidden');
-    };
+/* ===== Utilities ===== */
+const $ = s => document.querySelector(s);
+const show = id => { $(id).classList.remove('hidden'); };
+const hide = id => { $(id).classList.add('hidden'); };
 
-    // ======= API (no-preflight style) =======
-    async function apiGet(action, params = {}) {
-      const u = new URL(APPS_SCRIPT_URL);
-      u.searchParams.set('action', action);
-      Object.entries(params).forEach(([k,v])=> u.searchParams.set(k, v));
-      const res = await fetch(u.toString(), { method: 'GET' });
-      if(!res.ok) throw new Error('Network');
-      return res.json();
+const MONTHS = ['ตุลาคม','พฤศจิกายน','ธันวาคม','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน'];
+
+function checkCID(x){ return /^\d{13}$/.test(String(x||'').trim()); }
+
+function rowTemplate(r){
+  // plan tick
+  const tick = r.tick
+    ? `<svg class="tick text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>`
+    : `<svg class="tick text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>`;
+
+  let chipCls = 'bg-gray-100 text-gray-600', chipTxt = 'รอตรวจสอบ';
+  if (r.reportState === 'ok') { chipCls = 'bg-emerald-100 text-emerald-700'; chipTxt = 'ส่งรายงาน อสม.1 ถูกต้อง'; }
+  else if (r.reportState === 'bad') { chipCls = 'bg-rose-100 text-rose-700'; chipTxt = 'ยังไม่ถูกต้อง'; }
+
+  const planText = r.planStatus || 'ยังไม่ได้ส่ง';
+  const planCls  = r.tick ? 'text-emerald-700' : 'text-amber-600';
+
+  return `
+  <div class="py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      ${tick}
+      <div>
+        <div class="font-medium">${r.month}</div>
+        <div class="text-xs ${planCls}">สถานะ: ${planText}</div>
+      </div>
+    </div>
+    <div class="chip ${chipCls}">${chipTxt}</div>
+  </div>`;
+}
+
+async function apiGet(params){
+  const url = new URL(API_BASE);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString(), { method:'GET' });
+  return res.json();
+}
+async function apiPost(body){
+  const res = await fetch(API_BASE, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+/* ===== App Flow ===== */
+let liffProfile = null;
+let userId = '';
+let boundCID = '';
+
+async function main(){
+  try{
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) liff.login();
+
+    const prof = await liff.getProfile();
+    liffProfile = prof;
+    userId = prof.userId;
+
+    // ตรวจว่าลงทะเบียนแล้วหรือยัง
+    const init = await apiGet({ action:'getorinit', uid:userId });
+    if (!init.ok) throw new Error(init.error || 'init error');
+
+    if (init.registered){
+      // มีข้อมูลแล้ว → โหลดสถานะ
+      boundCID = init.profile.cid;
+      await renderHome(boundCID, init.profile);
+    } else {
+      // ยังไม่เคย → แสดงหน้า register
+      $('#reg-avatar').src = prof.pictureUrl || '';
+      $('#reg-name').textContent = prof.displayName || '-';
+      hide('#loader'); show('#view-register');
     }
-    async function apiPost(action, body = {}) {
-      const res = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type':'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action, ...body })
-      });
-      if(!res.ok) throw new Error('Network');
-      return res.json();
-    }
+  }catch(err){
+    hide('#loader');
+    alert('เกิดข้อผิดพลาด: ' + err.message);
+  }
+}
 
-    // ======= UI Helpers =======
-    function showChecking(){ show('checkingCard'); hide('profileCard'); hide('enrollCard'); hide('meetCard'); }
-    function showProfile(){ hide('checkingCard'); show('profileCard'); hide('enrollCard'); hide('meetCard'); }
-    function showEnroll(){ hide('checkingCard'); hide('profileCard'); show('enrollCard'); hide('meetCard'); }
-    function showMeet(){ hide('checkingCard'); hide('enrollCard'); hide('profileCard'); show('meetCard'); }
+async function renderHome(cid, infoFromInit=null){
+  hide('#loader');
 
-    function renderProfile(p, dispName, picUrl){
-      $('displayName').textContent = dispName || p['LINE_DISPLAY_NAME'] || '-';
-      $('pic').src   = picUrl || p['LINE_PICTURE_URL'] || '';
-      $('cid').textContent = 'CID: ' + (p['หมายเลขบัตรประชาชน'] || '—');
-      $('f_fullname').textContent = p['ชื่อ-นามสกุล'] || '—';
-      $('f_dob').textContent      = p['วันเกิด'] || '—';
-      $('f_addr').textContent     = p['ที่อยู่'] || '—';
-      $('f_moo').textContent      = p['หมู่ที่'] || '—';
-      $('f_tambon').textContent   = p['ตำบล'] || '—';
-      $('f_amphoe').textContent   = p['อำเภอ'] || '—';
-      $('f_changwat').textContent = p['จังหวัด'] || '—';
-      $('f_fac').textContent      = p['เลขสถานบริการ'] || '—';
-      $('f_reg').textContent      = p['วันที่ขึ้นทะเบียน'] || '—';
-      $('f_phone').textContent    = p['เบอร์โทรศัพท์'] || '—';
-      $('f_acc').textContent      = p['บัญชีปฎิบัติงานอสม.'] || '—';
-      $('f_status').textContent   = p['สถานะ อสม.'] || '—';
-    }
+  // โหลดสถานะ
+  const st = await apiGet({ action:'status', cid });
+  if (!st.ok) { alert(st.error || 'โหลดสถานะไม่สำเร็จ'); return; }
 
-    // ======= Meetings 12 months =======
-    function initYearSelector(defaultYear){
-      const ys = $('yearSelect');
-      if(ys.options.length) return;
-      const nowY = (new Date()).getFullYear();
-      const years = [nowY-1, nowY, nowY+1];
-      years.forEach(v=>{
-        const opt=document.createElement('option');
-        opt.value=v; opt.textContent=v;
-        if(v===defaultYear) opt.selected=true;
-        ys.appendChild(opt);
-      });
-      ys.addEventListener('change', ()=> loadMeetings12(Number(ys.value)));
-    }
+  const info = st.info || infoFromInit || {};
+  $('#pfp').src = (info.linepic || liffProfile?.pictureUrl || '');
+  $('#pf-name').textContent = info.name || liffProfile?.displayName || '-';
+  $('#pf-cid').textContent = cid;
+  $('#pf-moo').textContent = info.moo || '-';
 
-    async function loadMeetings12(year){
-      try{
-        loading(true);
-        const y = year || (Number($('yearSelect').value) || (new Date()).getFullYear());
-        const data = await apiGet('meetings12', { userId: gUserId, year: y });
-        if(!data.ok) throw new Error(data.error||'error');
+  $('#month-list').innerHTML = st.months.map(rowTemplate).join('');
+  show('#view-home');
+}
 
-        initYearSelector(data.year);
-        // sync selection
-        [...$('yearSelect').options].forEach(o=> o.selected = (Number(o.value)===data.year));
+// Register button
+$('#btn-register').addEventListener('click', async () => {
+  const cid = $('#cid').value.trim();
+  if (!checkCID(cid)) { alert('กรุณากรอกเลขบัตรประชาชน 13 หลักให้ถูกต้อง'); return; }
 
-        const list = (data.months||[]).map(m=>{
-          const check = m.attended ?
-            '<span class="inline-flex items-center text-emerald-700 text-xs gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2 4.8 12l1.4-1.4L9 13.4l8.8-8.8L19.2 6z"/></svg>มาแล้ว</span>' :
-            '<span class="inline-flex items-center text-gray-400 text-xs gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22q-2.075 0-3.9-.788t-3.187-2.125Q3.575 16.75 2.788 14.925T2 11q0-2.075.788-3.9t2.125-3.188Q6.25 2.575 8.075 1.788T12 1q2.075 0 3.9.788t3.188 2.125q1.337 1.338 2.125 3.163T22 11q0 2.075-.788 3.9t-2.125 3.187q-1.338 1.337-3.163 2.125T12 22Z"/></svg>ยัง</span>';
-          const when = [m.date, m.time].filter(Boolean).join(' ');
-          const place = m.place || '';
-          return `
-            <div class="border border-gray-200 rounded-xl p-3 flex items-start justify-between">
-              <div class="min-w-0">
-                <div class="text-[15px] font-medium leading-5">${m.title || ('ประชุม '+m.month)}</div>
-                <div class="text-xs text-gray-500">${when}${when && place ? ' • ' : ''}${place}</div>
-              </div>
-              <div class="shrink-0">${check}</div>
-            </div>`;
-        }).join('');
-        $('meetList').innerHTML = list || '<div class="text-xs text-gray-500">ยังไม่มีกำหนดการ</div>';
-      }catch(e){
-        console.error(e);
-        $('meetList').innerHTML = '<div class="text-xs text-rose-600">โหลดกำหนดการไม่สำเร็จ</div>';
-      }finally{
-        loading(false);
-      }
-    }
+  hide('#btn-register'); // ป้องกันกดซ้ำ
 
-    // ======= App State / Bootstrap =======
-    let gUserId='', gProfile=null;
+  const payload = {
+    action:'register',
+    cid,
+    uid: userId,
+    linename: liffProfile?.displayName || '',
+    linepic:  liffProfile?.pictureUrl || ''
+  };
+  const rs = await apiPost(payload);
+  if (!rs.ok) { alert(rs.error || 'ลงทะเบียนไม่สำเร็จ'); show('#btn-register'); return; }
 
-    async function bootstrap(){
-      try{
-        setStatus('กำลังตรวจสอบข้อมูล…'); showChecking(); loading(true);
-        await liff.init({ liffId: LIFF_ID });
-        if(!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
+  boundCID = cid;
+  // ไปหน้าหลักทันที
+  await renderHome(boundCID);
+});
 
-        const prof = await liff.getProfile(); gProfile = prof; gUserId = prof.userId;
-
-        const init = await apiGet('init', { userId: gUserId });
-        if(!init.ok){ setStatus('ตรวจสอบไม่สำเร็จ','err'); showEnroll(); return; }
-
-        if(init.mapped){
-          setStatus('พบข้อมูลแล้ว','ok');
-          renderProfile(init.profile, gProfile?.displayName, gProfile?.pictureUrl);
-          showProfile();
-          await loadMeetings12(); // โหลดประชุมทันทีเมื่อพบข้อมูล
-        }else{
-          setStatus('ไม่พบข้อมูล กรุณายืนยันตัวตน','info');
-          showEnroll();
-        }
-      }catch(err){
-        console.error(err);
-        setStatus('เกิดข้อผิดพลาดในการตรวจสอบ','err');
-        showEnroll();
-      }finally{
-        loading(false);
-      }
-    }
-
-    // ======= Events =======
-    $('btnEnroll').addEventListener('click', async ()=>{
-      const cid = ($('cidInput').value || '').trim();
-      if(!/^\d{13}$/.test(cid)){
-        Swal.fire({ icon:'warning', title:'กรุณากรอก CID 13 หลัก', confirmButtonColor:'#16a34a' });
-        return;
-      }
-      try{
-        loading(true);
-        const r = await apiPost('enroll', {
-          cid, userId:gUserId,
-          displayName: gProfile?.displayName || '',
-          pictureUrl:  gProfile?.pictureUrl  || ''
-        });
-        if(r.ok){
-          Swal.fire({ icon:'success', title: r.bound ? 'ผูกบัญชีสำเร็จ' : 'บันทึกแล้ว', confirmButtonColor:'#16a34a' });
-          const init = await apiGet('init', { userId:gUserId });
-          if(init?.mapped){
-            renderProfile(init.profile, gProfile?.displayName, gProfile?.pictureUrl);
-            setStatus('ยืนยันตัวตนแล้ว','ok');
-            showProfile();
-            await loadMeetings12();
-          }
-        }else{
-          let msg='ไม่สามารถยืนยันได้';
-          if(r.error==='cid_not_found') msg='ไม่พบ CID นี้ในระบบ';
-          if(r.error==='cid_already_linked_to_other') msg='CID นี้ถูกผูกกับบัญชีอื่นแล้ว';
-          Swal.fire({ icon:'error', title: msg, confirmButtonColor:'#16a34a' });
-          setStatus('ผิดพลาด: '+(r.error||''),'err');
-        }
-      }catch(err){
-        Swal.fire({ icon:'error', title:'เครือข่ายผิดพลาด', confirmButtonColor:'#16a34a' });
-      }finally{
-        loading(false);
-      }
-    });
-
-    $('btnRefresh').addEventListener('click', ()=> bootstrap());
-    $('btnShowEnroll').addEventListener('click', ()=> showEnroll());
-    $('btnShowProfile').addEventListener('click', ()=> showProfile());
-    $('btnShowMeet').addEventListener('click',   ()=> { showMeet(); loadMeetings12(Number($('yearSelect').value)||undefined); });
-
-    // Start
-    bootstrap();
-  </script>
+main();
+</script>
 </body>
 </html>
