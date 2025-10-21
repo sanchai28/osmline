@@ -144,9 +144,9 @@
   </div>
 
   <script>
-/* ===== Config ===== */
-const LIFF_ID  = '2008189191-jnqX2z8B';
-const API_BASE = 'https://script.google.com/macros/s/AKfycbxzSdlRAmekNHmt8AkyyO09lv7Xa-cWl_7oyd3P7ng3ybcaOeEsqOo95yPw9IIThR8j/exec';
+  /* ===== Config ===== */
+  const LIFF_ID  = '2008189191-jnqX2z8B';
+  const API_BASE = 'https://script.google.com/macros/s/AKfycbzvrK6QIFKXXCdHj9KzKi4bBk5bHiHZVidfov2V3xmskZ8yZsnar8TNqEbyQHJ3inos/exec';
 
   /* ===== Helpers ===== */
   const $ = s => document.querySelector(s);
@@ -161,13 +161,23 @@ const API_BASE = 'https://script.google.com/macros/s/AKfycbxzSdlRAmekNHmt8AkyyO0
       : `<svg class="tick text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>`;
   }
 
-  /* การ์ดเดือน */
+  /* การ์ดเดือน (รวมหมายเหตุจาก check_plan.note_1..note_12 เมื่อไม่ผ่าน) */
   function cardTemplate(r){
     const planTxt = r.planStatus || 'ยังไม่ได้ส่ง';
     const planCls = r.tick ? 'chip-plan-ok' : 'chip-plan-warn';
-    let chkTxt='รอตรวจสอบ', chkCls='chip-check-wait';
-    if (r.reportState==='ok'){ chkTxt='ถูกต้อง'; chkCls='chip-check-ok'; }
-    else if (r.reportState==='bad'){ chkTxt='ไม่ถูกต้อง'; chkCls='chip-check-bad'; }
+
+    // ตรวจสอบผลรายงาน + หมายเหตุ
+    let chkTxt='รอตรวจสอบ', chkCls='chip-check-wait', noteHtml='';
+    const isBad = (r.reportState === 'bad') || /ไม่ผ่าน/.test(r.checkStatus || '');
+    if (!isBad && r.reportState === 'ok'){ chkTxt='ถูกต้อง'; chkCls='chip-check-ok'; }
+    else if (isBad){
+      chkTxt='ไม่ถูกต้อง'; chkCls='chip-check-bad';
+      if (r.note && String(r.note).trim()){
+        noteHtml = `<div class="mt-2 text-rose-700 text-[0.95rem] leading-relaxed">
+          <span class="font-semibold">หมายเหตุ:</span> ${String(r.note).replace(/\n/g,'<br>')}
+        </div>`;
+      }
+    }
 
     return `
       <div class="month-card">
@@ -179,9 +189,12 @@ const API_BASE = 'https://script.google.com/macros/s/AKfycbxzSdlRAmekNHmt8AkyyO0
             <div class="text-slate-500 big">สถานะส่งแผน</div>
             <span class="chip ${planCls}">${planTxt}</span>
           </div>
-          <div class="flex items-center justify-between">
-            <div class="text-slate-500 big">รายงาน-อสม.1</div>
-            <span class="chip ${chkCls}">${chkTxt}</span>
+          <div>
+            <div class="flex items-center justify-between">
+              <div class="text-slate-500 big">รายงาน-อสม.1</div>
+              <span class="chip ${chkCls}">${chkTxt}</span>
+            </div>
+            ${noteHtml}
           </div>
         </div>
       </div>
