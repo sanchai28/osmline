@@ -2,321 +2,346 @@
 <html lang="th">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
-<title>Smart Care – ตรวจสอบแผน vs ผลการปฏิบัติงาน (JSONP-only)</title>
-
-<!-- Tailwind & SweetAlert2 (CDN สำหรับทดสอบ/ใช้งานเร็ว) -->
+<meta name="viewport" content="width=device-width, initial-scale=5, user-scalable=yes" />
+<title>Smart Care – Audit (แผน vs ผลการปฏิบัติงาน)</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; --a11y-scale:1; font-size:calc(16px * var(--a11y-scale)); }
-  body{
-    min-height:100vh;
-    background: radial-gradient(120% 140% at 0% 0%, #C084FC 0%, #A78BFA 30%, #8B5CF6 55%, #F472B6 90%) fixed;
-  }
-  .glass{ background: rgba(255,255,255,.85); backdrop-filter: blur(14px); }
-  .card{ border-radius: 18px; background: rgba(255,255,255,.98); box-shadow: 0 10px 22px rgba(168,85,247,.16); }
-  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border-radius:14px; padding:.65rem .9rem; font-weight:700; color:white; background: linear-gradient(135deg,#A78BFA 0%,#F472B6 100%); box-shadow: 0 10px 22px rgba(168,85,247,.25); }
+  body{background: radial-gradient(120% 140% at 0% 0%, #C084FC 0%, #A78BFA 30%, #8B5CF6 55%, #F472B6 90%) fixed;}
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; --scale:1; font-size:calc(16px * var(--scale)); }
+  .glass{ background: rgba(255,255,255,.86); backdrop-filter: blur(14px); }
+  .card{ border-radius:18px; background:#fff; box-shadow:0 10px 24px rgba(168,85,247,.2); }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border-radius:12px; padding:.6rem .9rem; font-weight:700; color:#fff; background:linear-gradient(135deg,#8B5CF6 0%,#F472B6 100%);}
   .btn-ghost{ background:#fff; color:#6b21a8; border:1px solid #e5e7eb; }
-  .badge{ display:inline-flex; align-items:center; gap:.25rem; padding:.32rem .6rem; border-radius:9999px; font-weight:700; font-size:.85rem;}
-  .b-ok{ background:#D1FAE5; color:#065F46; }
-  .b-warn{ background:#FEF3C7; color:#92400E; }
-  .b-bad{ background:#FEE2E2; color:#991B1B; }
-  .chip{ display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .5rem; border-radius:9999px; font-weight:700; font-size:.8rem; border:1px solid #e5e7eb; background:#fff; }
-  .chip-bad{ background:#FEF2F2; color:#991B1B; border-color:#fecaca; }
-  .chip-ok{ background:#F0FDF4; color:#166534; border-color:#bbf7d0; }
-  .sticky-header th{ position:sticky; top:0; background:#fff; z-index:5; }
-  .monos{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New",monospace; }
-  @media (prefers-reduced-motion: reduce){
-    *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
-  }
+  .input,.select{ width:100%; border:1px solid #e5e7eb; border-radius:12px; padding:.55rem .75rem; }
+  .table{ width:100%; border-collapse:collapse;}
+  .table th,.table td{ border-bottom:1px solid #e5e7eb; padding:.5rem .6rem; font-size:.95rem; }
+  .badge{ display:inline-block; padding:.25rem .55rem; border-radius:9999px; font-weight:700; font-size:.8rem;}
+  .ok{ background:#D1FAE5; color:#065F46; }
+  .warn{ background:#FEF3C7; color:#92400E; }
+  .bad{ background:#FEE2E2; color:#991B1B; }
+  .muted{ color:#64748b; }
+  .mono{ font-variant-numeric: tabular-nums; font-feature-settings:"tnum"; }
+  details>summary{ cursor:pointer; }
 </style>
 </head>
-<body class="p-4">
-  <div class="max-w-7xl mx-auto space-y-4">
-
-    <!-- Header -->
+<body class="min-h-screen p-4">
+  <div class="max-w-6xl mx-auto space-y-4">
     <header class="glass rounded-2xl p-4 text-white flex items-center justify-between"
-            style="background: linear-gradient(135deg,#8B5CF6 0%,#F472B6 100%); box-shadow: 0 10px 24px rgba(147,51,234,.35);">
+            style="background:linear-gradient(135deg,#8B5CF6 0%,#F472B6 100%); box-shadow:0 10px 24px rgba(147,51,234,.35);">
       <div>
-        <div class="text-2xl font-extrabold">Smart Care – ตรวจสอบแผนกับผล</div>
-        <div class="text-white/90">ตรวจข้อต่อข้อ (ผล ≥ แผน) + วันที่บันทึก ≥ วันที่ส่ง</div>
+        <div class="text-2xl font-extrabold">Smart Care – Audit</div>
+        <div class="text-white/90">ตรวจสอบ “แผน (plan_osm)” vs “ผลการปฏิบัติงาน (report_osm)” ต่อคน ต่อข้อ ต่อเดือน</div>
       </div>
-      <div class="flex items-center gap-2">
-        <button id="font-down" class="w-10 h-10 bg-white/20 rounded-xl font-bold">A−</button>
-        <button id="font-up"   class="w-10 h-10 bg-white/20 rounded-xl font-bold">A+</button>
+      <div class="flex gap-2">
+        <button id="fontDown" class="btn-ghost px-3">A−</button>
+        <button id="fontUp" class="btn-ghost px-3">A+</button>
       </div>
     </header>
 
-    <!-- Controls -->
-    <section class="card p-4">
-      <div class="grid md:grid-cols-[220px_1fr_1fr_auto] gap-3 items-end">
-        <div>
-          <label class="text-slate-600 text-sm font-semibold">เดือน</label>
-          <select id="selMonth" class="w-full border rounded-lg p-2">
-            <option value="">— กำลังโหลดเดือน —</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="text-slate-600 text-sm font-semibold">ค้นหา (ชื่อ/เลขบัตร/หมู่บ้าน)</label>
-          <input id="txtSearch" type="text" class="w-full border rounded-lg p-2" placeholder="พิมพ์คำค้น">
-        </div>
-
-        <div class="flex gap-3 items-center">
-          <div class="flex items-center gap-2">
-            <input id="onlyFailed" type="checkbox" class="w-4 h-4">
-            <label for="onlyFailed" class="text-slate-700">แสดงเฉพาะไม่ผ่าน</label>
-          </div>
-          <div class="flex items-center gap-2">
-            <input id="compact" type="checkbox" class="w-4 h-4">
-            <label for="compact" class="text-slate-700">ตารางแบบกระชับ</label>
-          </div>
-        </div>
-
-        <div class="flex gap-2 justify-end">
-          <button id="btnLoad" class="btn">ตรวจสอบ</button>
-          <button id="btnCopy" class="btn-ghost">คัดลอกรายการที่ไม่ผ่าน</button>
-        </div>
+    <!-- Panel: โหลดจากระบบ (API) -->
+    <section class="glass rounded-2xl p-4">
+      <div class="font-bold mb-2">โหลดข้อมูลจากระบบ (API)</div>
+      <div class="grid md:grid-cols-[220px_1fr_auto_auto] gap-2">
+        <select id="selMonth" class="select">
+          <option value="">— เลือกเดือน —</option>
+          <option>ตุลาคม</option><option>พฤศจิกายน</option><option>ธันวาคม</option>
+          <option>มกราคม</option><option>กุมภาพันธ์</option><option>มีนาคม</option>
+          <option>เมษายน</option><option>พฤษภาคม</option><option>มิถุนายน</option>
+          <option>กรกฎาคม</option><option>สิงหาคม</option><option>กันยายน</option>
+        </select>
+        <input id="filterText" class="input" placeholder="ตัวกรองชื่อ/หมู่บ้าน/CID (ไม่จำเป็น)" />
+        <button id="btnLoadAPI" class="btn">โหลดจาก API</button>
+        <button id="btnExportCSV" class="btn-ghost">Export CSV (รายการผิด)</button>
       </div>
+      <p class="muted text-sm mt-2">* ต้องมี endpoint ใน Apps Script: <code>GET action=audit_fetch_plan&month=…</code> และ <code>GET action=audit_fetch_report&month=…</code> (รายละเอียดอยู่ท้ายไฟล์นี้)</p>
+    </section>
 
-      <div class="mt-3 flex flex-wrap gap-2 items-center">
-        <div id="sumTotal"  class="badge b-warn">ทั้งหมด 0</div>
-        <div id="sumPass"   class="badge b-ok">ผ่าน 0</div>
-        <div id="sumFail"   class="badge b-bad">ไม่ผ่าน 0</div>
-        <div class="text-xs text-slate-500">เกณฑ์: ผล ≥ แผน และ วันที่บันทึก ≥ วันที่ส่ง</div>
+    <!-- Panel: หรือ อัปโหลดไฟล์เอง -->
+    <section class="glass rounded-2xl p-4">
+      <div class="font-bold mb-2">หรือ อัปโหลดไฟล์เอง (เปรียบเทียบในเบราว์เซอร์)</div>
+      <div class="grid md:grid-cols-3 gap-2">
+        <div>
+          <label class="muted text-sm">เลือกไฟล์แผน (plan_osm.xlsx/csv)</label>
+          <input type="file" id="filePlan" class="input" accept=".xlsx,.xls,.csv" />
+        </div>
+        <div>
+          <label class="muted text-sm">เลือกไฟล์ผลการปฏิบัติงาน (report_osm.xlsx/csv)</label>
+          <input type="file" id="fileReport" class="input" accept=".xlsx,.xls,.csv" />
+        </div>
+        <div class="flex items-end">
+          <button id="btnCompareUpload" class="btn w-full">เปรียบเทียบไฟล์</button>
+        </div>
       </div>
     </section>
 
-    <!-- Results -->
-    <section id="resultWrap" class="card p-0 overflow-hidden">
-      <div class="overflow-auto">
-        <table id="tbl" class="w-full">
-          <thead class="sticky-header">
-            <tr>
-              <th class="p-3 text-left w-[60px]">ลำดับ</th>
-              <th class="p-3 text-left">สถานะ</th>
-              <th class="p-3 text-left">ชื่อ</th>
-              <th class="p-3 text-left">เลขบัตร</th>
-              <th class="p-3 text-left">หมู่</th>
-              <th class="p-3 text-left">วันที่ส่ง</th>
-              <th class="p-3 text-left">วันที่บันทึก</th>
-              <th class="p-3 text-left">ไม่ผ่าน (ตัวชี้วัด)</th>
-              <th class="p-3 text-left">รายละเอียด</th>
-            </tr>
-          </thead>
+    <!-- ผลลัพธ์สรุป -->
+    <section class="card p-4">
+      <div class="flex items-center justify-between">
+        <div class="font-bold">ผลการตรวจสอบ</div>
+        <div id="summaryBadge" class="badge warn hidden"></div>
+      </div>
+      <div id="resultBox" class="mt-3 overflow-auto">
+        <table class="table">
+          <thead id="thead"></thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
     </section>
-
-    <section class="text-xs text-slate-600">
-      <div class="font-semibold">คำอธิบาย:</div>
-      <ul class="list-disc pl-6">
-        <li><span class="badge b-ok">ผ่าน</span> = ผลทุกข้อ ≥ แผน และ วันที่บันทึก ≥ วันที่ส่ง</li>
-        <li><span class="badge b-bad">ไม่ผ่าน</span> = มีอย่างน้อยหนึ่งข้อที่ผล &lt; แผน หรือ วันที่บันทึก &lt; วันที่ส่ง</li>
-        <li>คลิกปุ่ม “รายละเอียด” เพื่อดูเทียบตัวเลขทุกข้อ</li>
-      </ul>
-    </section>
-
   </div>
 
 <script>
-/* ========= Config ========= */
-const API_BASE = 'https://script.google.com/macros/s/AKfycbwA0ipym2STqDWYYHOv9-v3a1Cu_fxbc3IYX2XIrDbztnFX3H2poy8gJ8b_ise41IB3/exec'; // ใส่ URL /exec ของ check.gs (ที่รองรับ callback=...)
+/* ================= Config ================= */
+const API_BASE = 'https://script.google.com/macros/s/AKfycbx0hTIeuQwVgZO7EEq57nXZxGakCxn-b3wRx5L4RzoOkgHTlkyoRMsSoWQIqHzfy4Pb/exec'; // <- ใส่ URL /exec
+const METRICS = [
+  '1.1','1.1.1','1.1.2','1.2','1.2.1','1.2.2',
+  '1.3','1.3.1','1.3.2','1.3.3','1.4',
+  '2.1','2.2','2.3','2.4','2.5','2.6',
+  '3.1','4.1','5.1','5.2',
+  '6(1)','6(2)','6(3)','7(1)','7(2)',
+  '8.1','8(1)','8(2)','9.1','9.2'
+];
 
-/* ========= A11y font scale ========= */
-const SCALE_KEY='check_a11y_scale';
-function applyScale(v){ const n=Math.min(1.6,Math.max(0.9,v)); document.documentElement.style.setProperty('--a11y-scale',String(n)); localStorage.setItem(SCALE_KEY,String(n)); }
-function loadScale(){ const s=parseFloat(localStorage.getItem(SCALE_KEY)||'1'); applyScale(isNaN(s)?1:s); }
-document.getElementById('font-down').addEventListener('click',()=>{ const c=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--a11y-scale'))||1; applyScale(c-0.1); });
-document.getElementById('font-up').addEventListener('click',()=>{ const c=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--a11y-scale'))||1; applyScale(c+0.1); });
-loadScale();
+/* ================= Utils ================= */
+const $=s=>document.querySelector(s);
+function setScale(v){ const x=Math.min(1.7,Math.max(.9,v)); document.documentElement.style.setProperty('--scale',String(x)); }
+$('#fontDown').onclick=()=>{const c=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scale'))||1; setScale(c-.1);}
+$('#fontUp').onclick=()=>{const c=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scale'))||1; setScale(c+.1);}
 
-/* ========= Helpers ========= */
-const $ = s => document.querySelector(s);
-function loading(title='กำลังโหลด…'){ Swal.fire({title, allowOutsideClick:false, allowEscapeKey:false, didOpen:()=>Swal.showLoading()}); }
-function toastErr(msg='เกิดข้อผิดพลาด'){ Swal.fire({icon:'error', title:'ไม่สำเร็จ', text:msg}); }
-function toastOK(msg='สำเร็จ'){ Swal.fire({icon:'success', title:msg, timer:1200, showConfirmButton:false}); }
-function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+function onlyDigit(s){ return String(s||'').replace(/[^\d]/g,''); }
+function n(x){ const v=Number(String(x||'').toString().trim()); return isFinite(v)?v:0; }
+function parseDate(d){
+  // รองรับทั้ง 2025-10-21, 21/10/2025, 21-10-2025, เลขวันอย่างเดียว
+  if(!d) return null;
+  const s=String(d).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return new Date(s);
+  if(/^\d{1,2}[\/-]\d{1,2}[\/-]\d{4}$/.test(s)){
+    const [dd,mm,yy]=s.split(/[\/-]/).map(v=>parseInt(v,10));
+    return new Date(yy,mm-1,dd);
+  }
+  if(/^\d{1,2}$/.test(s)){ // บางไฟล์เก็บเฉพาะ "วันที่"
+    const today=new Date(); return new Date(today.getFullYear(), today.getMonth(), parseInt(s,10));
+  }
+  const d2=new Date(s); return isNaN(d2)?null:d2;
+}
 
-/* ========= JSONP (เท่านั้น) ========= */
-function jsonp(params){
-  return new Promise((resolve, reject)=>{
-    const cb = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    params = {...params, callback: cb};
-    window[cb] = (data)=>{ resolve(data); try{ delete window[cb]; }catch(_){} script.remove(); };
-    const url = new URL(API_BASE);
-    Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
-    const script = document.createElement('script');
-    script.src = url.toString();
-    script.onerror = ()=>{ try{ delete window[cb]; }catch(_){} reject(new Error('JSONP failed')); };
-    document.body.appendChild(script);
+function toastErr(msg){ Swal.fire({icon:'error', title:'ผิดพลาด', text:msg}); }
+function loading(t='กำลังโหลด…'){ Swal.fire({title:t, allowOutsideClick:false, didOpen:()=>Swal.showLoading()}); }
+function ok(msg){ Swal.fire({icon:'success', title:msg, timer:1200, showConfirmButton:false}); }
+
+async function apiGet(params){
+  const url=new URL(API_BASE);
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  const res=await fetch(url,{method:'GET'});
+  return res.json();
+}
+
+/* ================= Core: Compare ================= */
+function buildKey(row){ return onlyDigit(row['หมายเลขบัตรประชาชน']||''); }
+
+// สร้างดัชนีจากแถว (คีย์=cid)
+function indexByCID(rows){
+  const map=new Map();
+  rows.forEach(r=>{
+    const cid=buildKey(r);
+    if(cid) map.set(cid, r);
   });
+  return map;
 }
 
-/* ========= State ========= */
-let currentData = null;
+function compareMonth({planRows, reportRows, month, filter=''}){
+  const pMap=indexByCID(planRows);
+  const rMap=indexByCID(reportRows);
+  const results=[]; // ต่อคน
 
-/* ========= Init ========= */
-loadMonths();
+  const filterLower = filter.trim().toLowerCase();
+  const keys=new Set([...pMap.keys(), ...rMap.keys()]);
+  for(const cid of keys){
+    const p=pMap.get(cid)||{};
+    const r=rMap.get(cid)||{};
+    // ฟิลเตอร์แบบหลวม ๆ
+    const name=(p['ชื่อ-นามสกุล']||r['ชื่อ-นามสกุล']||'').toString();
+    const moo =(p['หมู่ที่']||r['หมู่ที่']||'').toString();
+    const matchFilter = !filterLower || name.toLowerCase().includes(filterLower) || moo.toLowerCase().includes(filterLower) || cid.includes(filterLower);
+    if(!matchFilter) continue;
 
-/* ========= Events ========= */
-$('#btnLoad').addEventListener('click', async ()=>{
-  const month = $('#selMonth').value;
-  if(!month){ toastErr('กรุณาเลือกเดือน'); return; }
-  await runCompare(month);
-});
-$('#txtSearch').addEventListener('input', ()=> renderTable(currentData));
-$('#onlyFailed').addEventListener('change', ()=> renderTable(currentData));
-$('#compact').addEventListener('change', ()=> renderTable(currentData));
-$('#btnCopy').addEventListener('click', copyFailedSummary);
+    // ตรวจข้อ
+    const mismatches=[];
+    METRICS.forEach(k=>{
+      const pv=n(p[k]); const rv=n(r[k]);
+      if(rv < pv){
+        mismatches.push({key:k, plan:pv, report:rv});
+      }
+    });
 
-/* ========= Load months (JSONP) ========= */
-async function loadMonths(){
-  try{
-    const js = await jsonp({action:'months'});
-    if(!js.ok) throw new Error(js.error||'โหลดรายชื่อเดือนไม่สำเร็จ');
-    const sel = $('#selMonth'); sel.innerHTML='';
-    sel.append(new Option('— เลือกเดือน —',''));
-    (js.months||[]).forEach(m=> sel.append(new Option(m,m)) );
-  }catch(err){ toastErr(err.message); }
-}
+    // ตรวจวันที่
+    const dp=parseDate(p['วันที่ส่ง']);
+    const dr=parseDate(r['วันที่บันทึก']);
+    let dateOk=true;
+    if(dp && dr){ dateOk = (dr.getTime() >= dp.getTime()); }
+    else if(dp && !dr){ dateOk=false; }
+    else if(!dp && dr){ dateOk=true; } // ถ้าแผนไม่มีวันที่ ส่งผ่านไป
 
-/* ========= Compare & Render (JSONP) ========= */
-async function runCompare(month){
-  try{
-    loading('กำลังตรวจสอบ…');
-    const js = await jsonp({action:'compare', month});
-    Swal.close();
-    if(!js.ok) throw new Error(js.error||'ดึงข้อมูลไม่สำเร็จ');
-    currentData = js;
-    renderSummary(js.summary);
-    renderTable(js);
-  }catch(err){ Swal.close(); toastErr(err.message); }
-}
-
-function renderSummary(sum){
-  $('#sumTotal').textContent = `ทั้งหมด ${sum?.total||0}`;
-  $('#sumPass').textContent  = `ผ่าน ${sum?.passed||0}`;
-  $('#sumFail').textContent  = `ไม่ผ่าน ${sum?.failed||0}`;
-}
-
-function renderTable(js){
-  const tbody = $('#tbody');
-  tbody.innerHTML = '';
-  if(!js || !js.results) return;
-
-  const q = ($('#txtSearch').value||'').trim().toLowerCase();
-  const onlyFailed = $('#onlyFailed').checked;
-  const compact = $('#compact').checked;
-
-  let list = js.results.slice();
-  if (q){
-    list = list.filter(r=>{
-      return (r.name||'').toLowerCase().includes(q) ||
-             (r.cid||'').includes(q) ||
-             (r.moo||'').toString().includes(q);
+    results.push({
+      cid,
+      name,
+      moo,
+      mismatches,
+      dateOk,
+      datePlan: dp? dp.toISOString().slice(0,10): (p['วันที่ส่ง']||''),
+      dateReport: dr? dr.toISOString().slice(0,10): (r['วันที่บันทึก']||'')
     });
   }
-  if (onlyFailed){
-    list = list.filter(r=>!r.okAll);
-  }
-
-  if (!list.length){
-    tbody.innerHTML = `<tr><td class="p-4 text-center text-slate-500" colspan="9">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>`;
-    return;
-  }
-
-  list.forEach((r,idx)=>{
-    const status = r.okAll
-      ? `<span class="badge b-ok">ผ่าน</span>`
-      : `<span class="badge b-bad">ไม่ผ่าน</span>`;
-
-    const fails = (r.fails||[]).length
-      ? r.fails.map(x=>`<span class="chip chip-bad">${escapeHtml(x)}</span>`).join(' ')
-      : `<span class="chip chip-ok">ผ่านทุกตัวชี้วัด</span>`;
-
-    const row = document.createElement('tr');
-    row.className = 'border-b hover:bg-violet-50/40';
-
-    const dateCellClass = r.dateOk ? 'text-emerald-700' : 'text-rose-700 font-semibold';
-
-    row.innerHTML = `
-      <td class="p-3 text-slate-600">${idx+1}</td>
-      <td class="p-3">${status}</td>
-      <td class="p-3">${escapeHtml(r.name||'-')}</td>
-      <td class="p-3 monos">${escapeHtml(r.cid||'-')}</td>
-      <td class="p-3">${escapeHtml(r.moo||'-')}</td>
-      <td class="p-3">${escapeHtml(r.planDate||'-')}</td>
-      <td class="p-3 ${dateCellClass}">${escapeHtml(r.reportDate||'-')}</td>
-      <td class="p-3">${fails}</td>
-      <td class="p-3">
-        <button class="btn-ghost px-3 py-2 rounded-lg text-sm" data-cid="${r.cid}">รายละเอียด</button>
-      </td>
-    `;
-    if (compact){ row.querySelectorAll('td').forEach(td=> td.classList.add('py-2')); }
-    tbody.appendChild(row);
-    row.querySelector('button[data-cid]')?.addEventListener('click', ()=> showDetails(r));
-  });
+  return results.sort((a,b)=>a.cid.localeCompare(b.cid));
 }
 
-function showDetails(r){
-  const rows = (r.metrics||[]).map(m=>{
-    const mark = m.ok ? '✅' : '❌';
-    const cls  = m.ok ? 'text-emerald-700' : 'text-rose-700 font-semibold';
-    return `<tr>
-      <td class="border p-1">${m.key}</td>
-      <td class="border p-1 text-right">${m.plan}</td>
-      <td class="border p-1 text-right ${cls}">${m.report}</td>
-      <td class="border p-1">${mark}</td>
+/* ================= UI render ================= */
+function renderTable(rows){
+  const thead=$('#thead'), tbody=$('#tbody'), sum=$('#summaryBadge');
+  thead.innerHTML = `
+    <tr>
+      <th class="text-left">CID</th>
+      <th class="text-left">ชื่อ</th>
+      <th class="text-left">หมู่</th>
+      <th class="text-left">ผลรวม</th>
+      <th class="text-left">ปัญหา</th>
+      <th class="text-left">วันที่ส่ง/บันทึก</th>
     </tr>`;
+  let badCount=0;
+  tbody.innerHTML = rows.map(r=>{
+    const okAll = r.mismatches.length===0 && r.dateOk;
+    if(!okAll) badCount++;
+    const detail = r.mismatches.length
+      ? `<ul class="list-disc ml-5">${r.mismatches.map(m=>`<li><span class="mono">${m.key}</span> รายงาน ${m.report} <span class="muted">(<)</span> แผน ${m.plan}</li>`).join('')}</ul>`
+      : `<span class="muted">—</span>`;
+    const dateBadge = r.dateOk
+      ? `<span class="badge ok">วันที่ถูกต้อง</span>`
+      : `<span class="badge bad">วันที่ไม่ถูกต้อง</span>`;
+    const mismatchBadge = r.mismatches.length
+      ? `<span class="badge bad">${r.mismatches.length} ข้อ</span>` : `<span class="badge ok">ผ่าน</span>`;
+    return `
+      <tr>
+        <td class="mono">${r.cid}</td>
+        <td>${r.name||'-'}</td>
+        <td class="mono">${r.moo||'-'}</td>
+        <td>${okAll?'<span class="badge ok">ผ่านทั้งหมด</span>':'<span class="badge bad">มีปัญหา</span>'}</td>
+        <td>
+          ${mismatchBadge}
+          <details class="mt-1"><summary class="muted">รายละเอียด</summary>${detail}</details>
+        </td>
+        <td>
+          <div class="mono">แผน: ${r.datePlan||'-'}</div>
+          <div class="mono">รายงาน: ${r.dateReport||'-'}</div>
+          ${dateBadge}
+        </td>
+      </tr>`;
   }).join('');
+  sum.classList.remove('hidden');
+  sum.textContent = `พบรายการผิด ${badCount} คน / ทั้งหมด ${rows.length} คน`;
+  sum.className = 'badge ' + (badCount? 'bad':'ok');
+}
 
-  const html = `
-    <div class="text-left space-y-2">
-      <div><b>ชื่อ:</b> ${escapeHtml(r.name||'-')} · <b>เลขบัตร:</b> <span class="monos">${escapeHtml(r.cid||'-')}</span> · <b>หมู่:</b> ${escapeHtml(r.moo||'-')}</div>
-      <div><b>เดือน:</b> ${escapeHtml(r.month)} · <b>วันที่ส่ง:</b> ${escapeHtml(r.planDate||'-')} · <b>วันที่บันทึก:</b> ${escapeHtml(r.reportDate||'-')}</div>
-      <div>${r.dateOk ? '<span class="badge b-ok">วันผ่าน</span>' : '<span class="badge b-bad">วันไม่ผ่าน</span>'}</div>
-      <div class="overflow-auto max-h-[60vh]">
-        <table class="border-collapse text-sm">
-          <thead>
-            <tr>
-              <th class="border p-1 text-left">ตัวชี้วัด</th>
-              <th class="border p-1 text-right">แผน</th>
-              <th class="border p-1 text-right">ผล</th>
-              <th class="border p-1 text-left">สถานะ</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-      ${(r.fails||[]).length ? `<div class="text-rose-700"><b>สรุปไม่ผ่าน:</b> ${r.fails.map(x=>`<span class="chip chip-bad">${escapeHtml(x)}</span>`).join(' ')}</div>` : ''}
-    </div>
-  `;
+/* ============== From API or From Upload ============== */
+async function loadFromAPI(){
+  const month = $('#selMonth').value.trim();
+  const filter = $('#filterText').value || '';
+  if(!month) return toastErr('กรุณาเลือกเดือน');
 
-  Swal.fire({
-    title: r.okAll ? 'ผ่าน' : 'ไม่ผ่าน',
-    html, width: Math.min(window.innerWidth*0.95, 900),
-    confirmButtonText: 'ปิด',
-    customClass:{ popup:'text-left' }
+  try{
+    loading('กำลังโหลดจาก API…');
+    // ต้องมี endpoint ฝั่ง Apps Script (ตัวอย่างชื่อ action ด้านล่าง)
+    const [plan, report] = await Promise.all([
+      apiGet({action:'audit_fetch_plan', month}),
+      apiGet({action:'audit_fetch_report', month})
+    ]);
+    Swal.close();
+
+    if(!plan.ok) return toastErr(plan.error||'โหลดแผนไม่สำเร็จ');
+    if(!report.ok) return toastErr(report.error||'โหลดรายงานไม่สำเร็จ');
+
+    const compared = compareMonth({planRows: plan.rows||[], reportRows: report.rows||[], month, filter});
+    renderTable(compared);
+    ok('เทียบข้อมูลสำเร็จ');
+    LAST_RESULT = compared;
+  }catch(err){
+    Swal.close(); toastErr(err.message);
+  }
+}
+
+function readExcel(file, asHeaderRow=true){
+  return new Promise((resolve,reject)=>{
+    const rd = new FileReader();
+    rd.onload=()=>{
+      try{
+        const wb=XLSX.read(new Uint8Array(rd.result),{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        if(asHeaderRow){
+          const json=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+          resolve(json);
+        }else{
+          const arr=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+          resolve(arr);
+        }
+      }catch(e){ reject(e); }
+    };
+    rd.onerror=()=>reject(rd.error);
+    rd.readAsArrayBuffer(file);
   });
 }
 
-function copyFailedSummary(){
-  if (!currentData || !currentData.results) return;
-  const fail = currentData.results.filter(r=>!r.okAll);
-  if (!fail.length){ toastOK('ทุกคนผ่านแล้ว!'); return; }
-  const lines = [
-    `สรุปไม่ผ่าน เดือน ${currentData.month} (${fail.length}/${currentData.results.length})`,
-    ...fail.map(r=>`• ${r.name||'-'} (${r.cid||''}) หมู่ ${r.moo||'-'} — ไม่ผ่าน: ${r.fails.join(' ; ')}`)
-  ];
-  const text = lines.join('\n');
-  navigator.clipboard.writeText(text)
-    .then(()=> toastOK('คัดลอกแล้ว'))
-    .catch(()=> toastErr('คัดลอกไม่สำเร็จ'));
+async function compareFromUpload(){
+  const planF = $('#filePlan').files[0];
+  const repF  = $('#fileReport').files[0];
+  if(!planF || !repF) return toastErr('กรุณาเลือกไฟล์ทั้งสอง');
+  try{
+    loading('กำลังอ่านไฟล์…');
+    // สมมติไฟล์เป็น export ของชีต plan_osm / report_osm ที่หัวตรงสเปก
+    const [planRows, reportRows] = await Promise.all([
+      readExcel(planF, true),
+      readExcel(repF, true)
+    ]);
+    Swal.close();
+
+    const month = $('#selMonth').value.trim() || '(ไม่ระบุ)';
+    const filter = $('#filterText').value || '';
+    const compared = compareMonth({planRows, reportRows, month, filter});
+    renderTable(compared);
+    ok('เทียบไฟล์สำเร็จ');
+    LAST_RESULT = compared;
+  }catch(err){
+    Swal.close(); toastErr(err.message);
+  }
 }
+
+/* ============== CSV Export ============== */
+let LAST_RESULT = [];
+function exportCSV(){
+  if(!LAST_RESULT.length){ return toastErr('ยังไม่มีผลลัพธ์สำหรับส่งออก'); }
+  const rows = [];
+  rows.push(['CID','ชื่อ','หมู่','สถานะรวม','จำนวนข้อไม่ตรง','ข้อที่ไม่ตรง (key:report<plan)','วันที่ส่ง(แผน)','วันที่บันทึก(รายงาน)','สถานะวันที่']);
+  LAST_RESULT.forEach(r=>{
+    const status = (r.mismatches.length===0 && r.dateOk)? 'ผ่านทั้งหมด':'มีปัญหา';
+    const keys = r.mismatches.map(m=>`${m.key}:${m.report}<${m.plan}`).join(' | ');
+    rows.push([r.cid, r.name||'', r.moo||'', status, r.mismatches.length, keys, r.datePlan||'', r.dateReport||'', r.dateOk?'ผ่าน':'ไม่ผ่าน']);
+  });
+  const csv = rows.map(a=>a.map(x=>{
+    const s = String(x??'');
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  }).join(',')).join('\n');
+
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'audit_mismatch.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ============== Bind ============== */
+$('#btnLoadAPI').onclick = loadFromAPI;
+$('#btnCompareUpload').onclick = compareFromUpload;
+$('#btnExportCSV').onclick = exportCSV;
 </script>
 </body>
 </html>
