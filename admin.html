@@ -11,39 +11,31 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
-  body{
-    background: radial-gradient(120% 140% at 0% 0%, #C084FC 0%, #A78BFA 30%, #8B5CF6 55%, #F472B6 90%) fixed;
-  }
-  html{
-    -webkit-text-size-adjust:100%;
-    text-size-adjust:100%;
-    --a11y-scale:1;
-    font-size:calc(16px * var(--a11y-scale));
-  }
+  body{ background: radial-gradient(120% 140% at 0% 0%, #C084FC 0%, #A78BFA 30%, #8B5CF6 55%, #F472B6 90%) fixed; }
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; --a11y-scale:1; font-size:calc(16px * var(--a11y-scale)); }
   .glass{ background: rgba(255,255,255,.85); backdrop-filter: blur(14px); }
   .card{ border-radius: 18px; background: rgba(255,255,255,.98); box-shadow: 0 10px 22px rgba(168,85,247,.16); }
-  .btn{
-    display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
-    border-radius:14px; padding:.7rem .9rem; font-weight:700; color:white;
-    background: linear-gradient(135deg,#A78BFA 0%,#F472B6 100%);
-    box-shadow: 0 10px 22px rgba(168,85,247,.25);
-  }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border-radius:14px; padding:.7rem .9rem; font-weight:700; color:white; background: linear-gradient(135deg,#A78BFA 0%,#F472B6 100%); box-shadow: 0 10px 22px rgba(168,85,247,.25); }
   .btn-ghost{ background:#fff; color:#6b21a8; border:1px solid #e5e7eb; }
-  .select, .input, .textarea{
-    width:100%; border-radius:14px; border:1px solid #e5e7eb; padding:.65rem .8rem; outline:none;
-  }
-  .select:focus, .input:focus, .textarea:focus{ box-shadow:0 0 0 3px rgba(168,85,247,.25); border-color:#c4b5fd; }
-  .big    { font-size: clamp(1rem, 3.6vw, 1.125rem); }
-  .bigger { font-size: clamp(1.125rem, 4.2vw, 1.25rem); }
+  .select,.input,.textarea{ width:100%; border-radius:14px; border:1px solid #e5e7eb; padding:.65rem .8rem; outline:none; }
+  .select:focus,.input:focus,.textarea:focus{ box-shadow:0 0 0 3px rgba(168,85,247,.25); border-color:#c4b5fd; }
+  .big{ font-size: clamp(1rem, 3.6vw, 1.125rem); }
+  .bigger{ font-size: clamp(1.125rem, 4.2vw, 1.25rem); }
   .table{ width:100%; border-collapse:collapse; }
-  .table th, .table td{ border-bottom:1px solid #e5e7eb; padding:.5rem .6rem; font-size:.95rem; }
+  .table th,.table td{ border-bottom:1px solid #e5e7eb; padding:.5rem .6rem; font-size:.95rem; }
   .badge{ display:inline-block; padding:.35rem .6rem; border-radius:9999px; font-weight:700; font-size:.85rem;}
   .b-ok{ background:#D1FAE5; color:#065F46; }
   .b-warn{ background:#FEF3C7; color:#92400E; }
   .b-bad{ background:#FEE2E2; color:#991B1B; }
-  @media (prefers-reduced-motion: reduce){
-    *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
-  }
+  @media (prefers-reduced-motion: reduce){ *{ animation-duration:.01ms !important; transition-duration:.01ms !important; } }
+
+  /* Modal */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; padding:1rem; z-index:50; }
+  .modal{ width:min(100%, 1100px); max-height:90vh; overflow:hidden; border-radius:18px; background:#fff; box-shadow:0 20px 60px rgba(0,0,0,.35); display:flex; flex-direction:column; }
+  .modal-header{ padding:1rem 1.2rem; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between; }
+  .modal-body{ padding:1rem 1.2rem; overflow:auto; }
+  .modal-footer{ padding:1rem 1.2rem; border-top:1px solid #eee; display:flex; gap:.5rem; justify-content:flex-end; }
+  .show{ display:flex !important; }
 </style>
 </head>
 <body class="min-h-screen p-4">
@@ -54,7 +46,7 @@
             style="background: linear-gradient(135deg,#8B5CF6 0%,#F472B6 100%); box-shadow: 0 10px 24px rgba(147,51,234,.35);">
       <div>
         <div class="text-2xl font-extrabold">Smart Care – Admin</div>
-        <div class="text-white/90 big">ตรวจสอบแผน/ผลรายงาน และอัปโหลดไฟล์แผน (Excel)</div>
+        <div class="text-white/90 big">ตรวจสอบแผน/ผลรายงาน + อัปโหลดไฟล์แผน (Excel)</div>
       </div>
       <div class="flex items-center gap-2">
         <button id="font-down" class="w-10 h-10 bg-white/20 rounded-xl font-bold">A−</button>
@@ -62,51 +54,13 @@
       </div>
     </header>
 
-    <!-- Upload Plan Section -->
-    <section class="card p-4">
-      <div class="flex items-center justify-between flex-wrap gap-3">
-        <div class="bigger font-bold">อัปโหลดไฟล์แผน (บันทึกลงชีต <span class="text-violet-700">plan_osm</span>)</div>
-        <div class="text-slate-500 text-sm">คีย์อัปเดต: <span class="font-semibold">หมายเลขบัตรประชาชน + เดือน</span></div>
-      </div>
-
-      <div class="grid md:grid-cols-3 gap-3 mt-3">
-        <div>
-          <label class="text-slate-600 text-sm font-semibold">เลือกเดือน</label>
-          <select id="selMonth" class="select">
-            <option value="">— เลือกเดือน —</option>
-            <option>ตุลาคม</option><option>พฤศจิกายน</option><option>ธันวาคม</option>
-            <option>มกราคม</option><option>กุมภาพันธ์</option><option>มีนาคม</option>
-            <option>เมษายน</option><option>พฤษภาคม</option><option>มิถุนายน</option>
-            <option>กรกฎาคม</option><option>สิงหาคม</option><option>กันยายน</option>
-          </select>
-        </div>
-        <div class="md:col-span-2">
-          <label class="text-slate-600 text-sm font-semibold">เลือกไฟล์ (.xlsx, .xls, .csv)</label>
-          <input id="filePlan" type="file" class="input" accept=".xlsx,.xls,.csv">
-        </div>
-      </div>
-
-      <div class="mt-3 flex gap-2">
-        <button id="btnPreview" class="btn">พรีวิวไฟล์</button>
-        <button id="btnUpload" class="btn btn-ghost" disabled>บันทึกลงชีต</button>
-      </div>
-
-      <div id="previewBox" class="mt-4 hidden">
-        <div class="flex items-center justify-between">
-          <div class="font-semibold">พรีวิวข้อมูล</div>
-          <div id="countBadge" class="badge b-ok">0 แถว</div>
-        </div>
-        <div class="overflow-auto mt-2 border rounded-xl">
-          <table class="table">
-            <thead id="thead"></thead>
-            <tbody id="tbody"></tbody>
-          </table>
-        </div>
-        <div id="warnBox" class="mt-2 text-amber-700 text-sm hidden"></div>
-      </div>
+    <!-- Toolbar -->
+    <section class="glass rounded-2xl p-4 flex flex-wrap gap-2">
+      <button id="btnOpenUpload" class="btn">อัปโหลดไฟล์แผน</button>
+      <!-- ปุ่มอื่นๆในอนาคต -->
     </section>
 
-    <!-- Quick fetch status block (optional, reuse your existing search-by-CID UI if needed) -->
+    <!-- Quick fetch status block (optional) -->
     <section class="glass rounded-2xl p-4">
       <div class="bigger font-bold mb-3">ตรวจสอบสถานะรายบุคคล (ค้นหาเร็ว)</div>
       <div class="grid md:grid-cols-[1fr_auto] gap-3">
@@ -116,14 +70,62 @@
       <div id="quickResult" class="mt-3 text-sm"></div>
     </section>
 
-    <footer class="text-center text-white/80 text-xs mt-6">
-      © Smart Care Admin UI
-    </footer>
+    <footer class="text-center text-white/80 text-xs mt-6">© Smart Care Admin UI</footer>
+  </div>
+
+  <!-- ===== Modal Upload ===== -->
+  <div id="uploadOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="uploadTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <div id="uploadTitle" class="font-bold text-lg">อัปโหลดไฟล์แผน → บันทึกลงชีต <span class="text-violet-700">plan_osm</span></div>
+        <button id="btnCloseModal" class="btn-ghost px-3 py-2 rounded-lg">ปิด</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid md:grid-cols-3 gap-3">
+          <div>
+            <label class="text-slate-600 text-sm font-semibold">เลือกเดือน</label>
+            <select id="selMonth" class="select">
+              <option value="">— เลือกเดือน —</option>
+              <option>ตุลาคม</option><option>พฤศจิกายน</option><option>ธันวาคม</option>
+              <option>มกราคม</option><option>กุมภาพันธ์</option><option>มีนาคม</option>
+              <option>เมษายน</option><option>พฤษภาคม</option><option>มิถุนายน</option>
+              <option>กรกฎาคม</option><option>สิงหาคม</option><option>กันยายน</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="text-slate-600 text-sm font-semibold">เลือกไฟล์ (.xlsx, .xls, .csv)</label>
+            <input id="filePlan" type="file" class="input" accept=".xlsx,.xls,.csv">
+          </div>
+        </div>
+
+        <div class="mt-3 flex gap-2">
+          <button id="btnPreview" class="btn">พรีวิวไฟล์</button>
+          <button id="btnUpload" class="btn btn-ghost" disabled>บันทึกลงชีต</button>
+        </div>
+
+        <div id="previewBox" class="mt-4 hidden">
+          <div class="flex items-center justify-between">
+            <div class="font-semibold">พรีวิวข้อมูล</div>
+            <div id="countBadge" class="badge b-ok">0 แถว</div>
+          </div>
+          <div class="overflow-auto mt-2 border rounded-xl" style="max-height: 45vh;">
+            <table class="table">
+              <thead id="thead"></thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+          <div id="warnBox" class="mt-2 text-amber-700 text-sm hidden"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnCloseModal2" class="btn-ghost px-4 py-2 rounded-lg">ปิดหน้าต่าง</button>
+      </div>
+    </div>
   </div>
 
 <script>
 /* ===== Config ===== */
-const API_BASE = 'https://script.google.com/macros/s/AKfycbwFI9QE2i5p9NNoRwEZT4-_gFqxQS0WQu7QOSi9B_4WFFKbgDcTpPh8dMg_9LghR3LG/exec'; // <-- URL /exec ของ Apps Script
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwFI9QE2i5p9NNoRwEZT4-_gFqxQS0WQu7QOSi9B_4WFFKbgDcTpPh8dMg_9LghR3LG/exec'; // ใส่ URL /exec ของ Apps Script
 
 /* ===== A11y Font Scale ===== */
 const SCALE_KEY='admin_a11y_scale';
@@ -157,7 +159,7 @@ async function apiPost(body){
   return res.json();
 }
 
-/* ===== Upload & Preview ===== */
+/* ===== Upload & Preview (Modal) ===== */
 const PLAN_HEADERS = [
   'ที่','หมายเลขบัตรประชาชน','ชื่อ-นามสกุล','หมู่ที่',
   '1.1','1.1.1','1.1.2','1.2','1.2.1','1.2.2',
@@ -167,11 +169,23 @@ const PLAN_HEADERS = [
   '6(1)','6(2)','6(3)','7(1)','7(2)',
   '8.1','8(1)','8(2)','9.1','9.2','วันที่ส่ง'
 ];
+let parsedRows = [];
+let previewHeaders = [];
 
-let parsedRows = []; // array of objects with normalized headers
-let previewHeaders = []; // headers found in file (kept order)
+function openModal(){ $('#uploadOverlay').classList.add('show'); document.body.style.overflow='hidden'; }
+function closeModal(){
+  $('#uploadOverlay').classList.remove('show'); document.body.style.overflow='';
+  // reset state
+  $('#selMonth').value=''; $('#filePlan').value=''; parsedRows=[]; previewHeaders=[];
+  $('#previewBox').classList.add('hidden'); $('#btnUpload').disabled=true;
+  $('#thead').innerHTML=''; $('#tbody').innerHTML=''; $('#warnBox').classList.add('hidden');
+  $('#countBadge').textContent='0 แถว';
+}
+$('#btnOpenUpload').addEventListener('click', openModal);
+$('#btnCloseModal').addEventListener('click', closeModal);
+$('#btnCloseModal2').addEventListener('click', closeModal);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && $('#uploadOverlay').classList.contains('show')) closeModal(); });
 
-/* Read Excel/CSV → JSON rows using SheetJS */
 function parseFileToJSON(file){
   return new Promise((resolve,reject)=>{
     const reader = new FileReader();
@@ -180,7 +194,6 @@ function parseFileToJSON(file){
         const data = new Uint8Array(reader.result);
         const wb = XLSX.read(data, { type:'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        // header: read from first row
         const json = XLSX.utils.sheet_to_json(ws, { defval:'', raw:false });
         resolve(json);
       }catch(err){ reject(err); }
@@ -189,18 +202,13 @@ function parseFileToJSON(file){
     reader.readAsArrayBuffer(file);
   });
 }
-
 function buildPreviewTable(rows){
   const thead = $('#thead'), tbody = $('#tbody'), count = $('#countBadge'), warnBox = $('#warnBox');
-  // keep only known headers (but still show extra columns if any)
   previewHeaders = Array.from(new Set([ ...PLAN_HEADERS, ...Object.keys(rows[0]||{}) ]));
-  thead.innerHTML = `<tr>${previewHeaders.map(h=>`<th class="text-left bg-slate-50">${h}</th>`).join('')}</tr>`;
-  tbody.innerHTML = rows.slice(0,150).map(r=>{
-    return `<tr>${previewHeaders.map(h=>`<td>${(r[h]??'')}</td>`).join('')}</tr>`;
-  }).join('');
+  thead.innerHTML = `<tr>${previewHeaders.map(h=>`<th class="text-left bg-slate-50 sticky top-0 z-10">${h}</th>`).join('')}</tr>`;
+  tbody.innerHTML = rows.slice(0,300).map(r=>`<tr>${previewHeaders.map(h=>`<td>${(r[h]??'')}</td>`).join('')}</tr>`).join('');
   count.textContent = `${rows.length} แถว`;
 
-  // warnings
   const missing = PLAN_HEADERS.filter(h=>!previewHeaders.includes(h));
   const cidBad = rows.filter(r=>!okCID(r['หมายเลขบัตรประชาชน']||'')).length;
   let warnTxt = [];
@@ -209,64 +217,45 @@ function buildPreviewTable(rows){
   if (warnTxt.length){ warnBox.classList.remove('hidden'); warnBox.innerHTML = warnTxt.join('<br>'); }
   else warnBox.classList.add('hidden');
 }
-
 $('#btnPreview').addEventListener('click', async ()=>{
   const month = $('#selMonth').value.trim();
   const file = $('#filePlan').files[0];
   if (!month){ toastErr('กรุณาเลือกเดือน'); return; }
   if (!file){ toastErr('กรุณาเลือกไฟล์'); return; }
-
   try{
     loading('กำลังอ่านไฟล์…');
     const raw = await parseFileToJSON(file);
     Swal.close();
 
-    // normalize rows (ensure headers exist; keep unknown headers as is)
     parsedRows = raw.map(r=>{
       const obj = {};
-      // copy known headers (keep original header names)
       PLAN_HEADERS.forEach(h => obj[h] = r[h] ?? '');
-      // keep additional headers too
       Object.keys(r).forEach(k => { if (!(k in obj)) obj[k] = r[k]; });
-      // normalize CID
       obj['หมายเลขบัตรประชาชน'] = (obj['หมายเลขบัตรประชาชน']||'').toString().replace(/[^\d]/g,'');
       return obj;
-    }).filter(r=>r['หมายเลขบัตรประชาชน']); // keep only rows having CID
-
+    }).filter(r=>r['หมายเลขบัตรประชาชน']);
     if (!parsedRows.length){ toastErr('ไม่พบข้อมูลที่มีเลขบัตร'); return; }
 
     $('#previewBox').classList.remove('hidden');
     buildPreviewTable(parsedRows);
     $('#btnUpload').disabled = false;
-  }catch(err){
-    Swal.close(); toastErr(err.message);
-  }
+  }catch(err){ Swal.close(); toastErr(err.message); }
 });
-
 $('#btnUpload').addEventListener('click', async ()=>{
   const month = $('#selMonth').value.trim();
   if (!month){ toastErr('กรุณาเลือกเดือน'); return; }
   if (!parsedRows.length){ toastErr('ยังไม่มีข้อมูลสำหรับอัปโหลด'); return; }
-
   try{
     loading('กำลังบันทึกลงชีต…');
-    // เพื่อไม่ให้ payload ใหญ่มาก เราจะส่งเฉพาะคอลัมน์มาตรฐาน + วันที่ส่ง + ส่วนเกินที่มี (Apps Script จะจัดการสร้างหัวตารางให้)
-    const payload = parsedRows;
-    const resp = await apiPost({
-      action: 'admin_bulk_plan',
-      month,
-      rows: payload
-    });
+    const resp = await apiPost({ action: 'admin_bulk_plan', month, rows: parsedRows });
     Swal.close();
-
     if (!resp.ok) throw new Error(resp.error || 'บันทึกไม่สำเร็จ');
     toastOK(`บันทึกสำเร็จ: อัปเดต ${resp.updated} แถว, เพิ่มใหม่ ${resp.inserted} แถว`);
-  }catch(err){
-    Swal.close(); toastErr(err.message);
-  }
+    closeModal();
+  }catch(err){ Swal.close(); toastErr(err.message); }
 });
 
-/* ===== Quick check status by CID (ออปชันเล็ก ๆ) ===== */
+/* ===== Quick check status by CID (optional) ===== */
 $('#btnQuick').addEventListener('click', async ()=>{
   const cid = onlyDigit($('#quickCID').value);
   if (!okCID(cid)){ toastErr('เลขบัตรไม่ถูกต้อง'); return; }
@@ -280,9 +269,7 @@ $('#btnQuick').addEventListener('click', async ()=>{
       <div>ชื่อ: <b>${(st.info?.linename || st.info?.name || '-')}</b> · หมู่บ้าน: <b>${st.info?.moo || '-'}</b></div>
       <div class="mt-1">เดือนทั้งหมด: ${st.months.length} • ผ่านตรวจ: <span class="badge b-ok">${okCount}</span></div>
     `;
-  }catch(err){
-    Swal.close(); toastErr(err.message);
-  }
+  }catch(err){ Swal.close(); toastErr(err.message); }
 });
 </script>
 </body>
