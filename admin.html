@@ -46,7 +46,7 @@
             style="background: linear-gradient(135deg,#8B5CF6 0%,#F472B6 100%); box-shadow: 0 10px 24px rgba(147,51,234,.35);">
       <div>
         <div class="text-2xl font-extrabold">Smart Care – Admin</div>
-        <div class="text-white/90 big">ตรวจสอบแผน/ผลรายงาน + อัปโหลดไฟล์แผน (Excel)</div>
+        <div class="text-white/90 big">ตรวจสอบแผน/ผลรายงาน + อัปโหลดไฟล์ (Excel)</div>
       </div>
       <div class="flex items-center gap-2">
         <button id="font-down" class="w-10 h-10 bg-white/20 rounded-xl font-bold">A−</button>
@@ -56,11 +56,11 @@
 
     <!-- Toolbar -->
     <section class="glass rounded-2xl p-4 flex flex-wrap gap-2">
-      <button id="btnOpenUpload" class="btn">อัปโหลดไฟล์แผน</button>
-      <!-- ปุ่มอื่นๆในอนาคต -->
+      <button id="btnOpenUploadPlan" class="btn">อัปโหลดไฟล์แผน (plan_osm)</button>
+      <button id="btnOpenUploadReport" class="btn">อัปโหลดผลการปฏิบัติงาน (report_osm)</button>
     </section>
 
-    <!-- Quick fetch status block (optional) -->
+    <!-- Quick fetch status (optional) -->
     <section class="glass rounded-2xl p-4">
       <div class="bigger font-bold mb-3">ตรวจสอบสถานะรายบุคคล (ค้นหาเร็ว)</div>
       <div class="grid md:grid-cols-[1fr_auto] gap-3">
@@ -73,18 +73,18 @@
     <footer class="text-center text-white/80 text-xs mt-6">© Smart Care Admin UI</footer>
   </div>
 
-  <!-- ===== Modal Upload ===== -->
-  <div id="uploadOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="uploadTitle">
+  <!-- ===== Modal Upload: PLAN ===== -->
+  <div id="uploadPlanOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="uploadPlanTitle">
     <div class="modal">
       <div class="modal-header">
-        <div id="uploadTitle" class="font-bold text-lg">อัปโหลดไฟล์แผน → บันทึกลงชีต <span class="text-violet-700">plan_osm</span></div>
-        <button id="btnCloseModal" class="btn-ghost px-3 py-2 rounded-lg">ปิด</button>
+        <div id="uploadPlanTitle" class="font-bold text-lg">อัปโหลดไฟล์แผน → <span class="text-violet-700">plan_osm</span></div>
+        <button class="btn-ghost px-3 py-2 rounded-lg" data-close="#uploadPlanOverlay">ปิด</button>
       </div>
       <div class="modal-body">
         <div class="grid md:grid-cols-3 gap-3">
           <div>
             <label class="text-slate-600 text-sm font-semibold">เลือกเดือน</label>
-            <select id="selMonth" class="select">
+            <select id="selMonthPlan" class="select">
               <option value="">— เลือกเดือน —</option>
               <option>ตุลาคม</option><option>พฤศจิกายน</option><option>ธันวาคม</option>
               <option>มกราคม</option><option>กุมภาพันธ์</option><option>มีนาคม</option>
@@ -99,33 +99,84 @@
         </div>
 
         <div class="mt-3 flex gap-2">
-          <button id="btnPreview" class="btn">พรีวิวไฟล์</button>
-          <button id="btnUpload" class="btn btn-ghost" disabled>บันทึกลงชีต</button>
+          <button id="btnPreviewPlan" class="btn">พรีวิวไฟล์</button>
+          <button id="btnUploadPlan" class="btn btn-ghost" disabled>บันทึกลงชีต</button>
         </div>
 
-        <div id="previewBox" class="mt-4 hidden">
+        <div id="previewPlanBox" class="mt-4 hidden">
           <div class="flex items-center justify-between">
-            <div class="font-semibold">พรีวิวข้อมูล</div>
-            <div id="countBadge" class="badge b-ok">0 แถว</div>
+            <div class="font-semibold">พรีวิวข้อมูล (แผน)</div>
+            <div id="countPlanBadge" class="badge b-ok">0 แถว</div>
           </div>
           <div class="overflow-auto mt-2 border rounded-xl" style="max-height: 45vh;">
             <table class="table">
-              <thead id="thead"></thead>
-              <tbody id="tbody"></tbody>
+              <thead id="theadPlan"></thead>
+              <tbody id="tbodyPlan"></tbody>
             </table>
           </div>
-          <div id="warnBox" class="mt-2 text-amber-700 text-sm hidden"></div>
+          <div id="warnPlan" class="mt-2 text-amber-700 text-sm hidden"></div>
         </div>
       </div>
       <div class="modal-footer">
-        <button id="btnCloseModal2" class="btn-ghost px-4 py-2 rounded-lg">ปิดหน้าต่าง</button>
+        <button class="btn-ghost px-4 py-2 rounded-lg" data-close="#uploadPlanOverlay">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Modal Upload: REPORT ===== -->
+  <div id="uploadReportOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="uploadReportTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <div id="uploadReportTitle" class="font-bold text-lg">อัปโหลดผลการปฏิบัติงาน → <span class="text-violet-700">report_osm</span></div>
+        <button class="btn-ghost px-3 py-2 rounded-lg" data-close="#uploadReportOverlay">ปิด</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid md:grid-cols-3 gap-3">
+          <div>
+            <label class="text-slate-600 text-sm font-semibold">เลือกเดือน</label>
+            <select id="selMonthReport" class="select">
+              <option value="">— เลือกเดือน —</option>
+              <option>ตุลาคม</option><option>พฤศจิกายน</option><option>ธันวาคม</option>
+              <option>มกราคม</option><option>กุมภาพันธ์</option><option>มีนาคม</option>
+              <option>เมษายน</option><option>พฤษภาคม</option><option>มิถุนายน</option>
+              <option>กรกฎาคม</option><option>สิงหาคม</option><option>กันยายน</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="text-slate-600 text-sm font-semibold">เลือกไฟล์ (.xlsx, .xls, .csv)</label>
+            <input id="fileReport" type="file" class="input" accept=".xlsx,.xls,.csv">
+            <p class="text-slate-500 text-xs mt-1">* โครงไฟล์ผลฯ: ข้อมูลเริ่มที่ A3, D3=เลขบัตร, J–AO=ตัวชี้วัดตามลำดับ</p>
+          </div>
+        </div>
+
+        <div class="mt-3 flex gap-2">
+          <button id="btnPreviewReport" class="btn">พรีวิวไฟล์</button>
+          <button id="btnUploadReport" class="btn btn-ghost" disabled>บันทึกลงชีต</button>
+        </div>
+
+        <div id="previewReportBox" class="mt-4 hidden">
+          <div class="flex items-center justify-between">
+            <div class="font-semibold">พรีวิวข้อมูล (ผลการปฏิบัติงาน)</div>
+            <div id="countReportBadge" class="badge b-ok">0 แถว</div>
+          </div>
+          <div class="overflow-auto mt-2 border rounded-xl" style="max-height: 45vh;">
+            <table class="table">
+              <thead id="theadReport"></thead>
+              <tbody id="tbodyReport"></tbody>
+            </table>
+          </div>
+          <div id="warnReport" class="mt-2 text-amber-700 text-sm hidden"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost px-4 py-2 rounded-lg" data-close="#uploadReportOverlay">ปิดหน้าต่าง</button>
       </div>
     </div>
   </div>
 
 <script>
 /* ===== Config ===== */
-const API_BASE = 'https://script.google.com/macros/s/AKfycbwFI9QE2i5p9NNoRwEZT4-_gFqxQS0WQu7QOSi9B_4WFFKbgDcTpPh8dMg_9LghR3LG/exec'; // ใส่ URL /exec ของ Apps Script
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwAoLUnMQRbnIVBiEYzCvCDzz1gunPZNkVRlitqHL7v6pdUMfiCQPCM66malNGMEVQE/exec'; // ใส่ URL /exec ของ Apps Script
 
 /* ===== A11y Font Scale ===== */
 const SCALE_KEY='admin_a11y_scale';
@@ -140,26 +191,26 @@ const $ = s => document.querySelector(s);
 const onlyDigit = s => String(s||'').replace(/[^\d]/g,'');
 const okCID = s => onlyDigit(s).length===13;
 function loading(title='กำลังประมวลผล…'){ Swal.fire({title, allowOutsideClick:false, allowEscapeKey:false, didOpen:()=>Swal.showLoading()}); }
-function toastOK(msg='สำเร็จ'){ Swal.fire({icon:'success', title:msg, timer:1200, showConfirmButton:false}); }
+function toastOK(msg='สำเร็จ'){ Swal.fire({icon:'success', title:msg, timer:1400, showConfirmButton:false}); }
 function toastErr(msg='เกิดข้อผิดพลาด'){ Swal.fire({icon:'error', title:'ไม่สำเร็จ', text:msg}); }
+function apiGet(params){ const url = new URL(API_BASE); Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v)); return fetch(url.toString(), {method:'GET'}).then(r=>r.json()); }
+function apiPost(body){ return fetch(API_BASE, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body)}).then(r=>r.json()); }
 
-/* ===== API (simple request) ===== */
-async function apiGet(params){
-  const url = new URL(API_BASE);
-  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k, v));
-  const res = await fetch(url.toString(), { method:'GET' });
-  return res.json();
-}
-async function apiPost(body){
-  const res = await fetch(API_BASE, {
-    method:'POST',
-    headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-    body: JSON.stringify(body)
-  });
-  return res.json();
-}
+/* ===== Open/Close modals ===== */
+function openOverlay(sel){ $(sel).classList.add('show'); document.body.style.overflow='hidden'; }
+function closeOverlay(sel){ $(sel).classList.remove('show'); document.body.style.overflow=''; }
+$('#btnOpenUploadPlan').addEventListener('click', ()=>openOverlay('#uploadPlanOverlay'));
+$('#btnOpenUploadReport').addEventListener('click', ()=>openOverlay('#uploadReportOverlay'));
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', e=>closeOverlay(e.currentTarget.getAttribute('data-close'))));
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){
+    ['#uploadPlanOverlay','#uploadReportOverlay'].forEach(sel=>{
+      if($(sel).classList.contains('show')) closeOverlay(sel);
+    });
+  }
+});
 
-/* ===== Upload & Preview (Modal) ===== */
+/* ===== PLAN upload (เหมือนเดิม) ===== */
 const PLAN_HEADERS = [
   'ที่','หมายเลขบัตรประชาชน','ชื่อ-นามสกุล','หมู่ที่',
   '1.1','1.1.1','1.1.2','1.2','1.2.1','1.2.2',
@@ -169,102 +220,140 @@ const PLAN_HEADERS = [
   '6(1)','6(2)','6(3)','7(1)','7(2)',
   '8.1','8(1)','8(2)','9.1','9.2','วันที่ส่ง'
 ];
-let parsedRows = [];
-let previewHeaders = [];
-
-function openModal(){ $('#uploadOverlay').classList.add('show'); document.body.style.overflow='hidden'; }
-function closeModal(){
-  $('#uploadOverlay').classList.remove('show'); document.body.style.overflow='';
-  // reset state
-  $('#selMonth').value=''; $('#filePlan').value=''; parsedRows=[]; previewHeaders=[];
-  $('#previewBox').classList.add('hidden'); $('#btnUpload').disabled=true;
-  $('#thead').innerHTML=''; $('#tbody').innerHTML=''; $('#warnBox').classList.add('hidden');
-  $('#countBadge').textContent='0 แถว';
-}
-$('#btnOpenUpload').addEventListener('click', openModal);
-$('#btnCloseModal').addEventListener('click', closeModal);
-$('#btnCloseModal2').addEventListener('click', closeModal);
-document.addEventListener('keydown', e=>{ if(e.key==='Escape' && $('#uploadOverlay').classList.contains('show')) closeModal(); });
-
-function parseFileToJSON(file){
-  return new Promise((resolve,reject)=>{
-    const reader = new FileReader();
-    reader.onload = () => {
-      try{
-        const data = new Uint8Array(reader.result);
-        const wb = XLSX.read(data, { type:'array' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(ws, { defval:'', raw:false });
-        resolve(json);
-      }catch(err){ reject(err); }
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsArrayBuffer(file);
-  });
-}
-function buildPreviewTable(rows){
-  const thead = $('#thead'), tbody = $('#tbody'), count = $('#countBadge'), warnBox = $('#warnBox');
-  previewHeaders = Array.from(new Set([ ...PLAN_HEADERS, ...Object.keys(rows[0]||{}) ]));
-  thead.innerHTML = `<tr>${previewHeaders.map(h=>`<th class="text-left bg-slate-50 sticky top-0 z-10">${h}</th>`).join('')}</tr>`;
-  tbody.innerHTML = rows.slice(0,300).map(r=>`<tr>${previewHeaders.map(h=>`<td>${(r[h]??'')}</td>`).join('')}</tr>`).join('');
+let planRows = [], planPreviewHeaders = [];
+function parseFileToJSON(file){ return new Promise((resolve,reject)=>{ const rd=new FileReader(); rd.onload=()=>{ try{ const wb=XLSX.read(new Uint8Array(rd.result),{type:'array'}); const ws=wb.Sheets[wb.SheetNames[0]]; const json=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false}); resolve(json); }catch(e){reject(e);} }; rd.onerror=()=>reject(rd.error); rd.readAsArrayBuffer(file); }); }
+function buildPreviewTablePlan(rows){
+  const thead=$('#theadPlan'), tbody=$('#tbodyPlan'), count=$('#countPlanBadge'), warn=$('#warnPlan');
+  planPreviewHeaders = Array.from(new Set([ ...PLAN_HEADERS, ...Object.keys(rows[0]||{}) ]));
+  thead.innerHTML = `<tr>${planPreviewHeaders.map(h=>`<th class="text-left bg-slate-50 sticky top-0 z-10">${h}</th>`).join('')}</tr>`;
+  tbody.innerHTML = rows.slice(0,300).map(r=>`<tr>${planPreviewHeaders.map(h=>`<td>${(r[h]??'')}</td>`).join('')}</tr>`).join('');
   count.textContent = `${rows.length} แถว`;
-
-  const missing = PLAN_HEADERS.filter(h=>!previewHeaders.includes(h));
+  const missing = PLAN_HEADERS.filter(h=>!planPreviewHeaders.includes(h));
   const cidBad = rows.filter(r=>!okCID(r['หมายเลขบัตรประชาชน']||'')).length;
-  let warnTxt = [];
-  if (missing.length) warnTxt.push(`* คอลัมน์ในไฟล์หายไป: ${missing.join(', ')}`);
-  if (cidBad) warnTxt.push(`* พบเลขบัตรไม่ถูกต้อง ${cidBad} แถว (ต้องเป็นตัวเลข 13 หลัก)`);
-  if (warnTxt.length){ warnBox.classList.remove('hidden'); warnBox.innerHTML = warnTxt.join('<br>'); }
-  else warnBox.classList.add('hidden');
+  let warns=[]; if(missing.length) warns.push(`* คอลัมน์หาย: ${missing.join(', ')}`); if(cidBad) warns.push(`* เลขบัตรไม่ถูกต้อง ${cidBad} แถว`);
+  if(warns.length){ warn.classList.remove('hidden'); warn.innerHTML=warns.join('<br>'); } else warn.classList.add('hidden');
 }
-$('#btnPreview').addEventListener('click', async ()=>{
-  const month = $('#selMonth').value.trim();
-  const file = $('#filePlan').files[0];
-  if (!month){ toastErr('กรุณาเลือกเดือน'); return; }
-  if (!file){ toastErr('กรุณาเลือกไฟล์'); return; }
+$('#btnPreviewPlan').addEventListener('click', async ()=>{
+  const month=$('#selMonthPlan').value.trim(); const file=$('#filePlan').files[0];
+  if(!month) return toastErr('กรุณาเลือกเดือน'); if(!file) return toastErr('กรุณาเลือกไฟล์');
   try{
-    loading('กำลังอ่านไฟล์…');
-    const raw = await parseFileToJSON(file);
-    Swal.close();
-
-    parsedRows = raw.map(r=>{
-      const obj = {};
-      PLAN_HEADERS.forEach(h => obj[h] = r[h] ?? '');
-      Object.keys(r).forEach(k => { if (!(k in obj)) obj[k] = r[k]; });
-      obj['หมายเลขบัตรประชาชน'] = (obj['หมายเลขบัตรประชาชน']||'').toString().replace(/[^\d]/g,'');
-      return obj;
-    }).filter(r=>r['หมายเลขบัตรประชาชน']);
-    if (!parsedRows.length){ toastErr('ไม่พบข้อมูลที่มีเลขบัตร'); return; }
-
-    $('#previewBox').classList.remove('hidden');
-    buildPreviewTable(parsedRows);
-    $('#btnUpload').disabled = false;
+    loading('กำลังอ่านไฟล์…'); const raw=await parseFileToJSON(file); Swal.close();
+    planRows = raw.map(r=>{ const o={}; PLAN_HEADERS.forEach(h=>o[h]=r[h]??''); Object.keys(r).forEach(k=>{ if(!(k in o)) o[k]=r[k]; }); o['หมายเลขบัตรประชาชน']=(o['หมายเลขบัตรประชาชน']||'').toString().replace(/[^\d]/g,''); return o; }).filter(r=>r['หมายเลขบัตรประชาชน']);
+    if(!planRows.length) return toastErr('ไม่พบข้อมูลที่มีเลขบัตร');
+    $('#previewPlanBox').classList.remove('hidden'); buildPreviewTablePlan(planRows); $('#btnUploadPlan').disabled=false;
   }catch(err){ Swal.close(); toastErr(err.message); }
 });
-$('#btnUpload').addEventListener('click', async ()=>{
-  const month = $('#selMonth').value.trim();
-  if (!month){ toastErr('กรุณาเลือกเดือน'); return; }
-  if (!parsedRows.length){ toastErr('ยังไม่มีข้อมูลสำหรับอัปโหลด'); return; }
+$('#btnUploadPlan').addEventListener('click', async ()=>{
+  const month=$('#selMonthPlan').value.trim(); if(!month) return toastErr('กรุณาเลือกเดือน');
+  if(!planRows.length) return toastErr('ยังไม่มีข้อมูลสำหรับอัปโหลด');
+  try{
+    loading('กำลังบันทึกลงชีต…'); const resp=await apiPost({ action:'admin_bulk_plan', month, rows:planRows }); Swal.close();
+    if(!resp.ok) throw new Error(resp.error||'บันทึกไม่สำเร็จ');
+    toastOK(`บันทึกสำเร็จ: อัปเดต ${resp.updated} แถว, เพิ่มใหม่ ${resp.inserted} แถว`);
+    closeOverlay('#uploadPlanOverlay');
+  }catch(err){ Swal.close(); toastErr(err.message); }
+});
+
+/* ===== REPORT upload (หัวไม่เหมือน ใช้อ่านตาม "ตำแหน่งคอลัมน์") ===== */
+const REPORT_HEADERS = [
+  'เดือน','ที่','หมายเลขบัตรประชาชน',
+  '1.1','1.1.1','1.1.2','1.2','1.2.1','1.2.2',
+  '1.3','1.3.1','1.3.2','1.3.3','1.4',
+  '2.1','2.2','2.3','2.4','2.5','2.6',
+  '3.1','4.1','5.1','5.2',
+  '6(1)','6(2)','6(3)','7(1)','7(2)',
+  '8.1','8(1)','8(2)','9.1','9.2','วันที่บันทึก'
+];
+// mapping index (0-based) จาก “แถวข้อมูล” ที่เริ่ม A3 ⇒ indexRow = 2
+const COL_IDX = {
+  NO: 0,         // A = "ที่"
+  CID: 3,        // D = "หมายเลขบัตรประชาชน"
+  START_METRIC: 9, // J เริ่ม metrics
+  END_METRIC: 40  // AO สิ้นสุด (รวม 'วันที่บันทึก')
+};
+const METRIC_KEYS = [
+  '1.1','1.1.1','1.1.2','1.2','1.2.1','1.2.2','1.3','1.3.1','1.3.2','1.3.3','1.4',
+  '2.1','2.2','2.3','2.4','2.5','2.6',
+  '3.1','4.1','5.1','5.2',
+  '6(1)','6(2)','6(3)',
+  '7(1)','7(2)',
+  '8.1','8(1)','8(2)',
+  '9.1','9.2','วันที่บันทึก'
+];
+
+let reportRows = [];
+function buildPreviewTableReport(rows){
+  const thead=$('#theadReport'), tbody=$('#tbodyReport'), count=$('#countReportBadge'), warn=$('#warnReport');
+  thead.innerHTML = `<tr>${REPORT_HEADERS.map(h=>`<th class="text-left bg-slate-50 sticky top-0 z-10">${h}</th>`).join('')}</tr>`;
+  tbody.innerHTML = rows.slice(0,300).map(r=>`<tr>${REPORT_HEADERS.map(h=>`<td>${(r[h]??'')}</td>`).join('')}</tr>`).join('');
+  count.textContent = `${rows.length} แถว`;
+  const bad = rows.filter(r=>!okCID(r['หมายเลขบัตรประชาชน']||'')).length;
+  if(bad){ warn.classList.remove('hidden'); warn.textContent = `* พบเลขบัตรไม่ถูกต้อง ${bad} แถว`; } else warn.classList.add('hidden');
+}
+function parseReportFileByPosition(file){
+  return new Promise((resolve,reject)=>{
+    const rd=new FileReader();
+    rd.onload=()=>{
+      try{
+        const wb=XLSX.read(new Uint8Array(rd.result),{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''}); // array-of-arrays
+        // เริ่มอ่านตั้งแต่แถว index 2 (A3)
+        const out=[];
+        for(let r=2; r<rows.length; r++){
+          const row=rows[r]; if(!row) continue;
+          const cid = (row[COL_IDX.CID]||'').toString().replace(/[^\d]/g,'');
+          const no  = row[COL_IDX.NO]||'';
+          // ตัดแถวว่างจริง ๆ
+          if(!cid && !no) continue;
+          const obj={ 'ที่': no, 'หมายเลขบัตรประชาชน': cid };
+          // fill metrics J..AO
+          let idx=COL_IDX.START_METRIC;
+          METRIC_KEYS.forEach(k=>{ obj[k] = row[idx++] ?? ''; });
+          out.push(obj);
+        }
+        resolve(out);
+      }catch(e){reject(e);}
+    };
+    rd.onerror=()=>reject(rd.error);
+    rd.readAsArrayBuffer(file);
+  });
+}
+
+$('#btnPreviewReport').addEventListener('click', async ()=>{
+  const month=$('#selMonthReport').value.trim(); const file=$('#fileReport').files[0];
+  if(!month) return toastErr('กรุณาเลือกเดือน'); if(!file) return toastErr('กรุณาเลือกไฟล์');
+  try{
+    loading('กำลังอ่านไฟล์…'); const parsed=await parseReportFileByPosition(file); Swal.close();
+    reportRows = parsed.filter(r=>r['หมายเลขบัตรประชาชน']); // keep cid
+    if(!reportRows.length) return toastErr('ไม่พบข้อมูลที่มีเลขบัตร');
+    $('#previewReportBox').classList.remove('hidden'); buildPreviewTableReport(reportRows); $('#btnUploadReport').disabled=false;
+  }catch(err){ Swal.close(); toastErr(err.message); }
+});
+
+$('#btnUploadReport').addEventListener('click', async ()=>{
+  const month=$('#selMonthReport').value.trim();
+  if(!month) return toastErr('กรุณาเลือกเดือน');
+  if(!reportRows.length) return toastErr('ยังไม่มีข้อมูลสำหรับอัปโหลด');
   try{
     loading('กำลังบันทึกลงชีต…');
-    const resp = await apiPost({ action: 'admin_bulk_plan', month, rows: parsedRows });
+    // ส่ง rows ที่มี key ตาม REPORT_HEADERS (ยกเว้น 'เดือน' ซึ่ง backend จะเติมเอง)
+    const resp=await apiPost({ action:'admin_bulk_report', month, rows: reportRows });
     Swal.close();
-    if (!resp.ok) throw new Error(resp.error || 'บันทึกไม่สำเร็จ');
+    if(!resp.ok) throw new Error(resp.error||'บันทึกไม่สำเร็จ');
     toastOK(`บันทึกสำเร็จ: อัปเดต ${resp.updated} แถว, เพิ่มใหม่ ${resp.inserted} แถว`);
-    closeModal();
+    closeOverlay('#uploadReportOverlay');
   }catch(err){ Swal.close(); toastErr(err.message); }
 });
 
 /* ===== Quick check status by CID (optional) ===== */
 $('#btnQuick').addEventListener('click', async ()=>{
   const cid = onlyDigit($('#quickCID').value);
-  if (!okCID(cid)){ toastErr('เลขบัตรไม่ถูกต้อง'); return; }
+  if (!okCID(cid)) return toastErr('เลขบัตรไม่ถูกต้อง');
   try{
-    loading('กำลังดึงสถานะ…');
-    const st = await apiGet({ action:'status', cid });
-    Swal.close();
-    if(!st.ok){ toastErr(st.error||'โหลดข้อมูลไม่สำเร็จ'); return; }
-    const okCount = (st.months||[]).filter(m=>m.reportState==='ok').length;
+    loading('กำลังดึงสถานะ…'); const st=await apiGet({action:'status', cid}); Swal.close();
+    if(!st.ok) return toastErr(st.error||'โหลดข้อมูลไม่สำเร็จ');
+    const okCount=(st.months||[]).filter(m=>m.reportState==='ok').length;
     $('#quickResult').innerHTML = `
       <div>ชื่อ: <b>${(st.info?.linename || st.info?.name || '-')}</b> · หมู่บ้าน: <b>${st.info?.moo || '-'}</b></div>
       <div class="mt-1">เดือนทั้งหมด: ${st.months.length} • ผ่านตรวจ: <span class="badge b-ok">${okCount}</span></div>
