@@ -174,7 +174,8 @@
       chkTxt='ไม่ถูกต้อง'; chkCls='chip-check-bad';
       if (r.note && String(r.note).trim()){
         noteHtml = `<div class="mt-2 text-rose-700 text-[0.95rem] leading-relaxed">
-          <span class="font-semibold">หมายเหตุ:</span> ${String(r.note).replace(/\n/g,'<br>')}
+          <div class="font-semibold mb-1">หมายเหตุ:</div>
+          <div class="whitespace-pre-line">${String(r.note)}</div>
         </div>`;
       }
     }
