@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ตรวจสอบแผน–รายงาน อสม. | KCR</title>
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ["Sarabun", "ui-sans-serif", "system-ui"] },
+        },
+      },
+    };
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- SheetJS (XLSX) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    html { font-size: 18px; }
+    body { font-family: 'Sarabun', system-ui, sans-serif; }
+    .touch-target { min-height: 3rem; }
+    .scroll-shadow { position: relative; }
+    .scroll-shadow:before { content: ""; position: sticky; top: 0; height: 16px; display:block; background: linear-gradient(white, rgba(255,255,255,0)); z-index: 5; }
+    .badge { display:inline-flex; align-items:center; gap:.4rem; padding:.15rem .5rem; border-radius:999px; font-size:.85em; font-weight:600; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <div class="max-w-6xl mx-auto p-4 md:p-8">
+    <header class="mb-6">
+      <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">ระบบตรวจสอบแผนปฏิบัติงาน & รายงานผล – อสม.</h1>
+      <p class="text-slate-600">อัปโหลดไฟล์ Excel (แผน, รายงาน) เลือกเดือน แล้วระบบจะบันทึกลงฐานข้อมูลและสรุปเทียบผลตามเงื่อนไข</p>
+    </header>
+
+    <!-- Card: ตั้งค่าเดือน และอัปโหลดไฟล์ -->
+    <section class="grid gap-4 md:grid-cols-3">
+      <div class="bg-white rounded-2xl shadow p-4 md:p-6 md:col-span-1">
+        <h2 class="font-bold text-lg mb-3">1) เลือกเดือน</h2>
+        <label class="block text-sm mb-1" for="month">เดือน (YYYY-MM)</label>
+        <input id="month" type="month" class="w-full touch-target px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <p class="text-xs text-slate-500 mt-2">ระบบจะบันทึกข้อมูลตามเดือนนี้</p>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow p-4 md:p-6">
+        <h2 class="font-bold text-lg mb-3">2) อัปโหลดไฟล์แผนปฏิบัติงาน</h2>
+        <input id="planFile" type="file" accept=".xlsx,.xls" class="block w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 touch-target" />
+        <p class="text-xs text-slate-500 mt-2">หัวตารางที่รองรับ: <code>cid, name, item, plan_qty, plan_date</code></p>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow p-4 md:p-6">
+        <h2 class="font-bold text-lg mb-3">3) อัปโหลดไฟล์รายงานผล</h2>
+        <input id="reportFile" type="file" accept=".xlsx,.xls" class="block w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 touch-target" />
+        <p class="text-xs text-slate-500 mt-2">หัวตารางที่รองรับ: <code>cid, name, item, report_qty, report_date</code> (รายแถว)</p>
+      </div>
+    </section>
+
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button id="btnAnalyze" class="touch-target px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">บันทึก & ประมวลผล</button>
+      <button id="btnExportCSV" class="touch-target px-4 py-2 rounded-xl bg-slate-800 hover:bg-black text-white font-semibold disabled:opacity-40" disabled>Export CSV</button>
+      <button id="btnExportJSON" class="touch-target px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-900 font-semibold disabled:opacity-40" disabled>Export JSON</button>
+    </div>
+
+    <!-- ผลลัพธ์ -->
+    <section class="mt-8">
+      <div class="bg-white rounded-2xl shadow p-4 md:p-6">
+        <div class="flex items-center justify-between gap-4 mb-3 flex-wrap">
+          <h2 class="font-bold text-lg">ผลการเปรียบเทียบ</h2>
+          <div class="text-sm text-slate-600" id="summaryLine">–</div>
+        </div>
+        <div class="overflow-x-auto scroll-shadow rounded-xl border border-slate-200">
+          <table class="min-w-[950px] w-full text-sm" id="resultTable">
+            <thead class="bg-slate-100 sticky top-0 z-10">
+              <tr>
+                <th class="text-left p-3">CID</th>
+                <th class="text-left p-3">ชื่อ-สกุล</th>
+                <th class="text-left p-3">รายการ</th>
+                <th class="text-right p-3">แผน</th>
+                <th class="text-right p-3">ผลรวมรายงาน</th>
+                <th class="text-left p-3">วันที่ส่งแผน</th>
+                <th class="text-left p-3">วันรายงานแรก</th>
+                <th class="text-left p-3">ตรวจผล</th>
+                <th class="text-left p-3">เหตุผล</th>
+              </tr>
+            </thead>
+            <tbody id="resultBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Firebase SDK v12 -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, writeBatch, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+    import { getStorage, ref as sRef, uploadBytes } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-storage.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+
+    // ==== Firebase Config (จากที่ให้มา) ====
+    const firebaseConfig = {
+      apiKey: "AIzaSyABn9dWF9Woqhw4sjoZi3T6VurNq_u8eQk",
+      authDomain: "osm-khokcharoen.firebaseapp.com",
+      projectId: "osm-khokcharoen",
+      storageBucket: "osm-khokcharoen.firebasestorage.app",
+      messagingSenderId: "521683480867",
+      appId: "1:521683480867:web:2771c9def895978b405c96"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const st = getStorage(app);
+    const auth = getAuth(app);
+    signInAnonymously(auth).catch(err => {
+      console.error(err);
+      Swal.fire("เข้าสู่ระบบไม่สำเร็จ", err.message, "error");
+    });
+
+    // ==== Helpers ====
+    const $ = (id) => document.getElementById(id);
+    const norm = (s) => (s||'').toString().trim();
+
+    const parseExcel = async (file) => {
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(ws, { defval: null, raw: false });
+      return json; // array of objects
+    };
+
+    const HEADER_ALIAS = {
+      cid: ["cid","pid","เลข13หลัก","เลขบัตรประชาชน","เลขประจำตัวประชาชน"],
+      name: ["name","fullname","ชื่อ","ชื่อ-สกุล","ชื่อสกุล","ชื่อ–สกุล"],
+      item: ["item","activity","กิจกรรม","รายการ","หัวข้อ"],
+      plan_qty: ["plan_qty","plan","target","จำนวนเป้าหมาย","จำนวนแผน","เป้าหมาย"],
+      plan_date: ["plan_date","plandate","วันที่ส่งในแผน","วันที่ส่งแผน","วันที่ส่ง","วันส่งแผน"],
+      report_qty: ["report_qty","qty","จำนวน","ผล","ปฏิบัติ","จำนวนรายงาน"],
+      report_date: ["report_date","date","วันที่รายงาน","วันที่ปฏิบัติ","วันปฏิบัติ","วันทำงาน"],
+    };
+
+    const autoMapHeaders = (rows, requiredKeys) => {
+      if (!rows.length) return null;
+      const headers = Object.keys(rows[0]);
+      const mapping = {};
+      const lower = headers.map(h=>h.toString().trim().toLowerCase());
+      const used = new Set();
+      for (const key of requiredKeys) {
+        let foundIdx = -1;
+        const aliases = HEADER_ALIAS[key] || [key];
+        for (let i=0;i<lower.length;i++) {
+          if (used.has(i)) continue;
+          if (aliases.some(a=>lower[i]===a.toLowerCase())) { foundIdx=i; break; }
+        }
+        if (foundIdx<0) {
+          for (let i=0;i<lower.length;i++) {
+            if (used.has(i)) continue;
+            if (aliases.some(a=>lower[i].includes(a.toLowerCase()))) { foundIdx=i; break; }
+          }
+        }
+        if (foundIdx>=0) { mapping[key]=headers[foundIdx]; used.add(foundIdx); }
+      }
+      return mapping;
+    };
+
+    // แปลงค่าวันที่จาก string/serial/ไทย พ.ศ. เป็น Date (UTC เที่ยงเพื่อเลี่ยง timezone)
+    const excelSerialToDate = (num) => {
+      // ใช้ SSF ของ xlsx ถ้ามี
+      try {
+        const o = XLSX.SSF.parse_date_code(Number(num));
+        if (o) return new Date(Date.UTC(o.y, (o.m||1)-1, o.d||1));
+      } catch(_){}
+      // สำรอง (Excel 1900-based; +1 เพราะ bug 1900 leap-year)
+      const epoch = new Date(Date.UTC(1899,11,30));
+      const d = new Date(epoch.getTime() + Number(num)*86400000);
+      return d;
+    };
+
+    const coerceDate = (v) => {
+      if (v===null || v===undefined || v==='') return null;
+      if (typeof v==='number' || /^\d+(\.\d+)?$/.test(v)) return excelSerialToDate(Number(v));
+      let s = v.toString().trim();
+      // รองรับรูปแบบ dd/mm/yyyy หรือ yyyy-mm-dd และ พ.ศ.
+      // แทนคอมม่าหรือช่องว่างด้วย dash
+      s = s.replace(/\s+/g,' ').replace(/,/g,'/');
+      // 1) yyyy-mm-dd
+      let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+      if (m) {
+        let y = Number(m[1]); let mo = Number(m[2]); let d = Number(m[3]);
+        if (y>2400) y-=543; // พ.ศ.
+        return new Date(Date.UTC(y, mo-1, d));
+      }
+      // 2) dd-mm-yyyy
+      m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+      if (m) {
+        let d = Number(m[1]); let mo = Number(m[2]); let y = Number(m[3]);
+        if (y>2400) y-=543; // พ.ศ.
+        return new Date(Date.UTC(y, mo-1, d));
+      }
+      // 3) Date.parse fallback
+      const t = Date.parse(s);
+      if (!Number.isNaN(t)) {
+        const d = new Date(t);
+        // ถ้าเป็น พ.ศ. ที่แปลงผิด ให้แก้
+        if (d.getUTCFullYear()>2400) d.setUTCFullYear(d.getUTCFullYear()-543);
+        return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+      }
+      return null;
+    };
+
+    const fmtISO = (d) => d ? d.toISOString().slice(0,10) : '';
+
+    const toNumber = (v) => {
+      if (v===null || v===undefined || v==='') return 0;
+      const n = Number((v+"").toString().replace(/,/g,''));
+      return Number.isFinite(n)? n : 0;
+    };
+
+    const keyOf = (cid, item) => `${cid}__${item}`.toLowerCase();
+
+    // รวมรายงานเป็นผลรวมต่อ (cid,item)
+    const aggregateReport = (rows, m) => {
+      const map = new Map();
+      for (const r of rows) {
+        const cid = norm(r[m.cid]||'');
+        const name = norm(r[m.name]||'');
+        const item = norm(r[m.item]||'');
+        if (!cid || !item) continue;
+        const qty = toNumber(r[m.report_qty]);
+        const rd  = coerceDate(r[m.report_date]);
+        const k = keyOf(cid,item);
+        if (!map.has(k)) map.set(k, {cid,name,item, sum:0, firstDate:null});
+        const o = map.get(k);
+        o.sum += qty;
+        if (rd) {
+          if (!o.firstDate || rd < o.firstDate) o.firstDate = rd;
+        }
+      }
+      return map; // key -> {cid,name,item,sum,firstDate}
+    };
+
+    // จัดเก็บแผนเป็น map ต่อ (cid,item)
+    const mapPlan = (rows, m) => {
+      const mp = new Map();
+      for (const r of rows) {
+        const cid = norm(r[m.cid]||'');
+        const name = norm(r[m.name]||'');
+        const item = norm(r[m.item]||'');
+        if (!cid || !item) continue;
+        const qty = toNumber(r[m.plan_qty]);
+        const pd  = coerceDate(r[m.plan_date]);
+        const k = keyOf(cid,item);
+        mp.set(k, {cid,name,item, planQty: qty, planDate: pd});
+      }
+      return mp;
+    };
+
+    // ==== Firestore Save (batch, chunk 400 docs/ครั้ง) ====
+    const saveResultsBatch = async (month, results, plans, reports) => {
+      const chunkSize = 400;
+      const entries = Array.from(results);
+      let saved = 0;
+      for (let i=0; i<entries.length; i+=chunkSize) {
+        const batch = writeBatch(db);
+        const slice = entries.slice(i, i+chunkSize);
+        for (const [k, v] of slice) {
+          const ref = doc(db, `months/${month}/results`, k);
+          batch.set(ref, v, { merge: true });
+        }
+        // เก็บ Plan/Report map เชิงอ้างอิง (สรุป) – ไม่เกิน 1 doc ต่อ key
+        for (const [k, p] of plans) {
+          const ref = doc(db, `months/${month}/plans`, k);
+          batch.set(ref, p, { merge: true });
+        }
+        for (const [k, r] of reports) {
+          const ref = doc(db, `months/${month}/reports`, k);
+          batch.set(ref, r, { merge: true });
+        }
+        await batch.commit();
+        saved += slice.length;
+      }
+      // บันทึกการรัน
+      await addDoc(collection(db, `months/${month}/runs`), {
+        createdAt: new Date().toISOString(),
+        total: entries.length
+      });
+      return saved;
+    };
+
+    const uploadOriginalFiles = async (month, planFile, reportFile) => {
+      if (planFile) {
+        const ref = sRef(st, `uploads/${month}/plan_${Date.now()}.xlsx`);
+        await uploadBytes(ref, planFile);
+      }
+      if (reportFile) {
+        const ref = sRef(st, `uploads/${month}/report_${Date.now()}.xlsx`);
+        await uploadBytes(ref, reportFile);
+      }
+    };
+
+    // ==== UI Actions ====
+    const resultState = { rows: [] };
+
+    const renderResults = (arr) => {
+      const body = $("resultBody");
+      body.innerHTML = '';
+      let pass=0, fail=0;
+      for (const r of arr) {
+        const tr = document.createElement('tr');
+        tr.className = 'border-t border-slate-100 hover:bg-slate-50';
+        const badge = (ok, labelOk, labelNo) => ok
+          ? `<span class="badge bg-emerald-100 text-emerald-700">✔ ${labelOk}</span>`
+          : `<span class="badge bg-rose-100 text-rose-700">✖ ${labelNo}</span>`;
+        const reasons = [];
+        if (!r.qty_ok) reasons.push('ผลรวมรายงานน้อยกว่าแผน');
+        if (!r.date_ok) reasons.push('วันรายงานแรก < วันที่ส่งแผน');
+        const okAll = r.qty_ok && r.date_ok;
+        if (okAll) pass++; else fail++;
+        tr.innerHTML = `
+          <td class="p-3 whitespace-nowrap">${r.cid}</td>
+          <td class="p-3">${r.name||''}</td>
+          <td class="p-3">${r.item}</td>
+          <td class="p-3 text-right">${r.planQty}</td>
+          <td class="p-3 text-right">${r.reportSum}</td>
+          <td class="p-3">${fmtISO(r.planDate)}</td>
+          <td class="p-3">${fmtISO(r.firstReportDate)}</td>
+          <td class="p-3">${badge(okAll,'ผ่าน','ไม่ผ่าน')}</td>
+          <td class="p-3">${reasons.join(' ; ')||'-'}</td>
+        `;
+        body.appendChild(tr);
+      }
+      $("summaryLine").textContent = `รวม ${arr.length} รายการ • ผ่าน ${pass} • ไม่ผ่าน ${fail}`;
+      const enable = arr.length>0;
+      $("btnExportCSV").disabled = !enable;
+      $("btnExportJSON").disabled = !enable;
+    };
+
+    const toCSV = (arr) => {
+      const header = ['cid','name','item','planQty','reportSum','planDate','firstReportDate','qty_ok','date_ok','pass'];
+      const rows = [header.join(',')];
+      for (const r of arr) {
+        rows.push([
+          r.cid, r.name||'', r.item,
+          r.planQty, r.reportSum,
+          fmtISO(r.planDate), fmtISO(r.firstReportDate),
+          r.qty_ok?1:0, r.date_ok?1:0, (r.qty_ok&&r.date_ok)?1:0
+        ].map(x=>`"${(x??'').toString().replace(/"/g,'""')}"`).join(','));
+      }
+      return rows.join('\n');
+    };
+
+    const download = (name, content, mime) => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([content], {type:mime}));
+      a.download = name; a.click();
+    };
+
+    $("btnExportCSV").addEventListener('click', ()=>{
+      download(`results_${$("month").value||'month'}.csv`, toCSV(resultState.rows), 'text/csv');
+    });
+    $("btnExportJSON").addEventListener('click', ()=>{
+      download(`results_${$("month").value||'month'}.json`, JSON.stringify(resultState.rows, null, 2), 'application/json');
+    });
+
+    $("btnAnalyze").addEventListener('click', async ()=>{
+      const month = $("month").value;
+      const planFile = $("planFile").files[0];
+      const reportFile = $("reportFile").files[0];
+      if (!month) { return Swal.fire('กรุณาเลือกเดือน', 'เช่น 2025-10', 'warning'); }
+      if (!planFile || !reportFile) { return Swal.fire('กรุณาอัปโหลดทั้ง 2 ไฟล์', 'แผน และ รายงานผล', 'warning'); }
+
+      Swal.fire({ title:'กำลังประมวลผล...', didOpen: ()=>Swal.showLoading(), allowOutsideClick:false, allowEscapeKey:false, allowEnterKey:false });
+      try {
+        const [planRows, reportRows] = await Promise.all([parseExcel(planFile), parseExcel(reportFile)]);
+        const planMap = autoMapHeaders(planRows, ['cid','name','item','plan_qty','plan_date']);
+        const reportMap = autoMapHeaders(reportRows, ['cid','name','item','report_qty','report_date']);
+        if (!planMap || Object.keys(planMap).length<5) throw new Error('หัวตารางไฟล์แผนไม่ครบ (ต้องมี cid, name, item, plan_qty, plan_date)');
+        if (!reportMap || Object.keys(reportMap).length<5) throw new Error('หัวตารางไฟล์รายงานไม่ครบ (ต้องมี cid, name, item, report_qty, report_date)');
+
+        const mpPlan = mapPlan(planRows, planMap);
+        const mpRep  = aggregateReport(reportRows, reportMap);
+
+        // เปรียบเทียบ
+        const results = new Map();
+        for (const [k, p] of mpPlan) {
+          const r = mpRep.get(k);
+          const sum = r? r.sum : 0;
+          const first = r? r.firstDate : null;
+          const qty_ok = sum >= (p.planQty||0);
+          const date_ok = (p.planDate && first) ? (first.getTime() >= p.planDate.getTime()) : false;
+          results.set(k, {
+            cid: p.cid, name: p.name, item: p.item,
+            planQty: p.planQty||0,
+            reportSum: sum,
+            planDate: p.planDate||null,
+            firstReportDate: first||null,
+            qty_ok, date_ok,
+            pass: qty_ok && date_ok
+          });
+        }
+
+        // เรนเดอร์ผล
+        resultState.rows = Array.from(results.values());
+        renderResults(resultState.rows);
+
+        // อัปโหลดไฟล์ต้นฉบับ
+        await uploadOriginalFiles(month, planFile, reportFile);
+        // บันทึกผลลง Firestore
+        const savedCount = await saveResultsBatch(month, results, mpPlan, mpRep);
+        Swal.fire('สำเร็จ', `บันทึกผล ${savedCount} รายการ ลงเดือน ${month}`, 'success');
+      } catch (err) {
+        console.error(err);
+        Swal.fire('เกิดข้อผิดพลาด', err.message || 'ไม่สามารถประมวลผลได้', 'error');
+      }
+    });
+  </script>
+</body>
+</html>
