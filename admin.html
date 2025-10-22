@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
 <title>Smart Care – Admin Panel</title>
 
-<!-- Tailwind + SweetAlert2 -->
+<!-- Tailwind + SweetAlert2 + SheetJS -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
   body{
@@ -21,46 +22,39 @@
   }
   .glass{ background: rgba(255,255,255,.85); backdrop-filter: blur(14px); }
   .card{ border-radius: 18px; background: rgba(255,255,255,.98); box-shadow: 0 10px 22px rgba(168,85,247,.16); }
-  .badge{
-    display:inline-block; padding:.45rem .7rem; border-radius:9999px; font-weight:700; font-size:.9rem;
-  }
-  .b-ok{ background:#D1FAE5; color:#065F46; }
-  .b-warn{ background:#FEF3C7; color:#92400E; }
-  .b-bad{ background:#FEE2E2; color:#991B1B; }
-  .label{ font-size:.9rem; color:#475569; }
-  .tick{ width:20px; height:20px }
-  .grid-month{ display:grid; grid-template-columns: 1fr; gap:12px; }
-  @media (min-width: 900px){ .grid-month{ grid-template-columns: 1fr 1fr; } }
-  .select, .textarea{
-    width:100%; border-radius:14px; border:1px solid #e5e7eb; padding:.65rem .8rem; outline:none;
-  }
-  .select:focus, .textarea:focus{ box-shadow:0 0 0 3px rgba(168,85,247,.25); border-color:#c4b5fd; }
-  .textarea{ min-height:90px; resize:vertical; }
   .btn{
     display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
     border-radius:14px; padding:.7rem .9rem; font-weight:700; color:white;
     background: linear-gradient(135deg,#A78BFA 0%,#F472B6 100%);
     box-shadow: 0 10px 22px rgba(168,85,247,.25);
   }
-  .btn-ghost{ background: white; color:#6b21a8; border:1px solid #e5e7eb; }
-  .btn:disabled{ opacity:.6; cursor:not-allowed; }
+  .btn-ghost{ background:#fff; color:#6b21a8; border:1px solid #e5e7eb; }
+  .select, .input, .textarea{
+    width:100%; border-radius:14px; border:1px solid #e5e7eb; padding:.65rem .8rem; outline:none;
+  }
+  .select:focus, .input:focus, .textarea:focus{ box-shadow:0 0 0 3px rgba(168,85,247,.25); border-color:#c4b5fd; }
   .big    { font-size: clamp(1rem, 3.6vw, 1.125rem); }
   .bigger { font-size: clamp(1.125rem, 4.2vw, 1.25rem); }
-
+  .table{ width:100%; border-collapse:collapse; }
+  .table th, .table td{ border-bottom:1px solid #e5e7eb; padding:.5rem .6rem; font-size:.95rem; }
+  .badge{ display:inline-block; padding:.35rem .6rem; border-radius:9999px; font-weight:700; font-size:.85rem;}
+  .b-ok{ background:#D1FAE5; color:#065F46; }
+  .b-warn{ background:#FEF3C7; color:#92400E; }
+  .b-bad{ background:#FEE2E2; color:#991B1B; }
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
   }
 </style>
 </head>
 <body class="min-h-screen p-4">
-  <div class="max-w-5xl mx-auto space-y-4">
+  <div class="max-w-6xl mx-auto space-y-4">
 
     <!-- Header -->
     <header class="glass rounded-2xl p-4 text-white flex items-center justify-between"
             style="background: linear-gradient(135deg,#8B5CF6 0%,#F472B6 100%); box-shadow: 0 10px 24px rgba(147,51,234,.35);">
       <div>
         <div class="text-2xl font-extrabold">Smart Care – Admin</div>
-        <div class="text-white/90 big">ปรับสถานะรายเดือน & เพิ่มหมายเหตุ</div>
+        <div class="text-white/90 big">ตรวจสอบแผน/ผลรายงาน และอัปโหลดไฟล์แผน (Excel)</div>
       </div>
       <div class="flex items-center gap-2">
         <button id="font-down" class="w-10 h-10 bg-white/20 rounded-xl font-bold">A−</button>
@@ -68,38 +62,58 @@
       </div>
     </header>
 
-    <!-- Search Box -->
+    <!-- Upload Plan Section -->
+    <section class="card p-4">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div class="bigger font-bold">อัปโหลดไฟล์แผน (บันทึกลงชีต <span class="text-violet-700">plan_osm</span>)</div>
+        <div class="text-slate-500 text-sm">คีย์อัปเดต: <span class="font-semibold">หมายเลขบัตรประชาชน + เดือน</span></div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-3 mt-3">
+        <div>
+          <label class="text-slate-600 text-sm font-semibold">เลือกเดือน</label>
+          <select id="selMonth" class="select">
+            <option value="">— เลือกเดือน —</option>
+            <option>ตุลาคม</option><option>พฤศจิกายน</option><option>ธันวาคม</option>
+            <option>มกราคม</option><option>กุมภาพันธ์</option><option>มีนาคม</option>
+            <option>เมษายน</option><option>พฤษภาคม</option><option>มิถุนายน</option>
+            <option>กรกฎาคม</option><option>สิงหาคม</option><option>กันยายน</option>
+          </select>
+        </div>
+        <div class="md:col-span-2">
+          <label class="text-slate-600 text-sm font-semibold">เลือกไฟล์ (.xlsx, .xls, .csv)</label>
+          <input id="filePlan" type="file" class="input" accept=".xlsx,.xls,.csv">
+        </div>
+      </div>
+
+      <div class="mt-3 flex gap-2">
+        <button id="btnPreview" class="btn">พรีวิวไฟล์</button>
+        <button id="btnUpload" class="btn btn-ghost" disabled>บันทึกลงชีต</button>
+      </div>
+
+      <div id="previewBox" class="mt-4 hidden">
+        <div class="flex items-center justify-between">
+          <div class="font-semibold">พรีวิวข้อมูล</div>
+          <div id="countBadge" class="badge b-ok">0 แถว</div>
+        </div>
+        <div class="overflow-auto mt-2 border rounded-xl">
+          <table class="table">
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div id="warnBox" class="mt-2 text-amber-700 text-sm hidden"></div>
+      </div>
+    </section>
+
+    <!-- Quick fetch status block (optional, reuse your existing search-by-CID UI if needed) -->
     <section class="glass rounded-2xl p-4">
+      <div class="bigger font-bold mb-3">ตรวจสอบสถานะรายบุคคล (ค้นหาเร็ว)</div>
       <div class="grid md:grid-cols-[1fr_auto] gap-3">
-        <div>
-          <label class="label">เลขบัตรประชาชน (13 หลัก)</label>
-          <input id="cidInput" class="select" inputmode="numeric" maxlength="13" placeholder="เช่น 1234567890123">
-        </div>
-        <div class="flex items-end">
-          <button id="btnFetch" class="btn w-full md:w-auto">ดึงข้อมูล</button>
-        </div>
+        <input id="quickCID" class="input" inputmode="numeric" maxlength="13" placeholder="เลขบัตร 13 หลัก">
+        <button id="btnQuick" class="btn w-full md:w-auto">ดึงสถานะ</button>
       </div>
-      <p class="text-slate-500 text-sm mt-2">* ใส่เลขบัตรของ อสม. ที่ต้องการปรับสถานะ/เพิ่มหมายเหตุ</p>
-    </section>
-
-    <!-- Profile Summary -->
-    <section id="profileBox" class="card p-4 hidden">
-      <div class="flex items-center gap-4">
-        <img id="pfp" class="w-16 h-16 rounded-xl object-cover" src="" alt="">
-        <div>
-          <div id="pfname" class="bigger font-bold">-</div>
-          <div class="text-slate-500 big">CID: <span id="pfcid">-</span> · หมู่บ้าน <span id="pfmoo">-</span></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Months Grid -->
-    <section id="monthsGrid" class="grid-month hidden"></section>
-
-    <!-- Bulk buttons -->
-    <section id="bulkBar" class="hidden flex flex-wrap gap-2">
-      <button id="btnSaveAll" class="btn">บันทึกทั้งหมด</button>
-      <button id="btnReload" class="btn btn-ghost">โหลดข้อมูลใหม่</button>
+      <div id="quickResult" class="mt-3 text-sm"></div>
     </section>
 
     <footer class="text-center text-white/80 text-xs mt-6">
@@ -109,7 +123,7 @@
 
 <script>
 /* ===== Config ===== */
-const API_BASE = 'https://script.google.com/macros/s/AKfycbzxcL5a-xZmalSaGxiwcZJ3a56yqasFF3LB4XqDXNM6dyY32VAZrCX1CjuCdL_uZrbF/exec';  // <-- ใส่ URL /exec ของ Web App
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwFI9QE2i5p9NNoRwEZT4-_gFqxQS0WQu7QOSi9B_4WFFKbgDcTpPh8dMg_9LghR3LG/exec'; // <-- URL /exec ของ Apps Script
 
 /* ===== A11y Font Scale ===== */
 const SCALE_KEY='admin_a11y_scale';
@@ -123,22 +137,14 @@ loadScale();
 const $ = s => document.querySelector(s);
 const onlyDigit = s => String(s||'').replace(/[^\d]/g,'');
 const okCID = s => onlyDigit(s).length===13;
-const MONTHS = ['ตุลาคม','พฤศจิกายน','ธันวาคม','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน'];
+function loading(title='กำลังประมวลผล…'){ Swal.fire({title, allowOutsideClick:false, allowEscapeKey:false, didOpen:()=>Swal.showLoading()}); }
+function toastOK(msg='สำเร็จ'){ Swal.fire({icon:'success', title:msg, timer:1200, showConfirmButton:false}); }
+function toastErr(msg='เกิดข้อผิดพลาด'){ Swal.fire({icon:'error', title:'ไม่สำเร็จ', text:msg}); }
 
-function toastOK(msg='บันทึกสำเร็จ'){
-  Swal.fire({icon:'success', title: msg, timer:1200, showConfirmButton:false});
-}
-function toastErr(msg='เกิดข้อผิดพลาด'){
-  Swal.fire({icon:'error', title: 'ไม่สำเร็จ', text: msg});
-}
-function loading(title='กำลังโหลด…'){
-  Swal.fire({title, allowOutsideClick:false, allowEscapeKey:false, didOpen:()=>Swal.showLoading()});
-}
-
-/* ===== API (simple request – no preflight) ===== */
+/* ===== API (simple request) ===== */
 async function apiGet(params){
   const url = new URL(API_BASE);
-  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k, v));
   const res = await fetch(url.toString(), { method:'GET' });
   return res.json();
 }
@@ -151,196 +157,132 @@ async function apiPost(body){
   return res.json();
 }
 
-/* ===== State ===== */
-let CURRENT = {
-  cid: '',
-  info: null,
-  months: [] // [{month, planStatus, checkStatus, note, tick, reportState}]
-};
+/* ===== Upload & Preview ===== */
+const PLAN_HEADERS = [
+  'ที่','หมายเลขบัตรประชาชน','ชื่อ-นามสกุล','หมู่ที่',
+  '1.1','1.1.1','1.1.2','1.2','1.2.1','1.2.2',
+  '1.3','1.3.1','1.3.2','1.3.3','1.4',
+  '2.1','2.2','2.3','2.4','2.5','2.6',
+  '3.1','4.1','5.1','5.2',
+  '6(1)','6(2)','6(3)','7(1)','7(2)',
+  '8.1','8(1)','8(2)','9.1','9.2','วันที่ส่ง'
+];
 
-/* ===== UI Builders ===== */
-function option(v, selected){ return `<option value="${v}" ${selected?'selected':''}>${v}</option>`; }
-function selectPlan(val=''){
-  const opts = ['','ส่งแล้ว','ยังไม่ได้ส่ง','ค่าว่าง'].map(x=>option(x, x===val)).join('');
-  return `<select class="select sel-plan">${opts}</select>`;
-}
-function selectCheck(val=''){
-  const opts = ['','ตรวจสอบแล้ว','ไม่ถูกต้อง','ค่าว่าง'].map(x=>option(x, x===val)).join('');
-  return `<select class="select sel-check">${opts}</select>`;
-}
-function tick(on){
-  return on
-    ? `<svg class="tick text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>`
-    : `<svg class="tick text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>`;
-}
-function cardMonth(row, idx){
-  const planBadge = row.planStatus==='ส่งแล้ว' ? 'badge b-ok' : (row.planStatus ? 'badge b-warn' : 'badge');
-  const checkBadge = row.reportState==='ok' ? 'badge b-ok' : row.reportState==='bad' ? 'badge b-bad' : 'badge';
-  return `
-  <div class="card p-4" data-idx="${idx}">
-    <div class="flex items-center justify-between">
-      <div class="inline-flex items-center gap-2">
-        ${tick(row.tick)}
-        <div class="text-xl font-extrabold text-violet-800">${row.month}</div>
-      </div>
-      <button class="btn btn-save-one">บันทึกเดือนนี้</button>
-    </div>
+let parsedRows = []; // array of objects with normalized headers
+let previewHeaders = []; // headers found in file (kept order)
 
-    <div class="mt-3 grid gap-3 md:grid-cols-2">
-      <div>
-        <div class="label mb-1">สถานะส่งแผน (ชีต plan)</div>
-        ${selectPlan(row.planStatus||'')}
-        <div class="mt-1 ${planBadge}">${row.planStatus||'—'}</div>
-      </div>
-
-      <div>
-        <div class="label mb-1">ผลตรวจสอบ (ชีต check_plan)</div>
-        ${selectCheck(row.checkStatus||'')}
-        <div class="mt-1 ${checkBadge}">${row.checkStatus||'—'}</div>
-      </div>
-    </div>
-
-    <div class="mt-3">
-      <div class="label mb-1">หมายเหตุ (note_${idx+1})</div>
-      <textarea class="textarea ta-note" placeholder="ใส่คำอธิบายกรณีไม่ถูกต้อง…">${row.note?String(row.note).replace(/</g,'&lt;'):''}</textarea>
-    </div>
-  </div>`;
-}
-
-/* ===== Render ===== */
-function renderProfile(info){
-  $('#pfp').src = info.linepic || '';
-  $('#pfname').textContent = info.linename || info.name || '-';
-  $('#pfcid').textContent = CURRENT.cid;
-  $('#pfmoo').textContent = info.moo || '-';
-  $('#profileBox').classList.remove('hidden');
-}
-function renderMonths(){
-  const el = $('#monthsGrid');
-  el.innerHTML = CURRENT.months.map((r,i)=>cardMonth(r,i)).join('');
-  el.classList.remove('hidden');
-  $('#bulkBar').classList.remove('hidden');
-
-  // bind per-card save
-  el.querySelectorAll('.card').forEach(card=>{
-    card.querySelector('.btn-save-one').addEventListener('click', async ()=>{
-      const idx = parseInt(card.getAttribute('data-idx'),10);
-      await saveOne(idx, card);
-    });
+/* Read Excel/CSV → JSON rows using SheetJS */
+function parseFileToJSON(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const data = new Uint8Array(reader.result);
+        const wb = XLSX.read(data, { type:'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        // header: read from first row
+        const json = XLSX.utils.sheet_to_json(ws, { defval:'', raw:false });
+        resolve(json);
+      }catch(err){ reject(err); }
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsArrayBuffer(file);
   });
 }
 
-/* ===== Fetch & Save ===== */
-async function fetchByCID(cid){
-  loading('กำลังดึงข้อมูล…');
-  const st = await apiGet({ action:'status', cid });
-  Swal.close();
+function buildPreviewTable(rows){
+  const thead = $('#thead'), tbody = $('#tbody'), count = $('#countBadge'), warnBox = $('#warnBox');
+  // keep only known headers (but still show extra columns if any)
+  previewHeaders = Array.from(new Set([ ...PLAN_HEADERS, ...Object.keys(rows[0]||{}) ]));
+  thead.innerHTML = `<tr>${previewHeaders.map(h=>`<th class="text-left bg-slate-50">${h}</th>`).join('')}</tr>`;
+  tbody.innerHTML = rows.slice(0,150).map(r=>{
+    return `<tr>${previewHeaders.map(h=>`<td>${(r[h]??'')}</td>`).join('')}</tr>`;
+  }).join('');
+  count.textContent = `${rows.length} แถว`;
 
-  if(!st.ok){ toastErr(st.error||'โหลดข้อมูลไม่สำเร็จ'); return; }
-
-  CURRENT.cid = cid;
-  CURRENT.info = st.info || {};
-  CURRENT.months = st.months || [];
-
-  renderProfile(CURRENT.info);
-  renderMonths();
+  // warnings
+  const missing = PLAN_HEADERS.filter(h=>!previewHeaders.includes(h));
+  const cidBad = rows.filter(r=>!okCID(r['หมายเลขบัตรประชาชน']||'')).length;
+  let warnTxt = [];
+  if (missing.length) warnTxt.push(`* คอลัมน์ในไฟล์หายไป: ${missing.join(', ')}`);
+  if (cidBad) warnTxt.push(`* พบเลขบัตรไม่ถูกต้อง ${cidBad} แถว (ต้องเป็นตัวเลข 13 หลัก)`);
+  if (warnTxt.length){ warnBox.classList.remove('hidden'); warnBox.innerHTML = warnTxt.join('<br>'); }
+  else warnBox.classList.add('hidden');
 }
 
-async function saveOne(idx, cardEl){
-  const m = CURRENT.months[idx];
-  const selPlan = cardEl.querySelector('.sel-plan');
-  const selCheck = cardEl.querySelector('.sel-check');
-  const taNote = cardEl.querySelector('.ta-note');
-
-  const planStatus = selPlan.value || '';
-  const checkStatus = selCheck.value || '';
-  const note = taNote.value || '';
+$('#btnPreview').addEventListener('click', async ()=>{
+  const month = $('#selMonth').value.trim();
+  const file = $('#filePlan').files[0];
+  if (!month){ toastErr('กรุณาเลือกเดือน'); return; }
+  if (!file){ toastErr('กรุณาเลือกไฟล์'); return; }
 
   try{
-    cardEl.querySelector('.btn-save-one').disabled = true;
-    // เรียกอัปเดตแบบ simple request
-    const resp = await apiPost({
-      action: 'admin_update',
-      cid: CURRENT.cid,
-      month: m.month,                // ชื่อเดือนภาษาไทย
-      planStatus,                    // อัปเดตชีต plan
-      checkStatus,                   // อัปเดตชีต check_plan
-      note                           // อัปเดต note_#
-    });
-    if(!resp.ok) throw new Error(resp.error||'บันทึกไม่สำเร็จ');
-
-    // อัปเดตสถานะในหน่วยความจำ & ป้าย
-    m.planStatus = planStatus;
-    m.checkStatus = checkStatus;
-    m.note = note;
-    m.tick = (planStatus==='ส่งแล้ว');
-    m.reportState = (checkStatus==='ตรวจสอบแล้ว') ? 'ok' : (checkStatus==='ไม่ถูกต้อง' ? 'bad' : 'pending');
-
-    // รีเรนเดอร์เฉพาะป้าย (เล็กๆ)
-    cardEl.querySelectorAll('.badge').forEach(b=>b.remove());
-    const blocks = cardEl.querySelectorAll('.grid > div');
-    const planBadge = document.createElement('div');
-    planBadge.className = 'mt-1 ' + (m.planStatus==='ส่งแล้ว' ? 'badge b-ok' : (m.planStatus ? 'badge b-warn' : 'badge'));
-    planBadge.textContent = m.planStatus || '—';
-    blocks[0].appendChild(planBadge);
-
-    const chkBadge = document.createElement('div');
-    chkBadge.className = 'mt-1 ' + (m.reportState==='ok' ? 'badge b-ok' : m.reportState==='bad' ? 'badge b-bad' : 'badge');
-    chkBadge.textContent = m.checkStatus || '—';
-    blocks[1].appendChild(chkBadge);
-
-    toastOK('บันทึกเดือน ' + m.month + ' สำเร็จ');
-  }catch(err){
-    toastErr(err.message);
-  }finally{
-    cardEl.querySelector('.btn-save-one').disabled = false;
-  }
-}
-
-async function saveAll(){
-  const cards = Array.from(document.querySelectorAll('#monthsGrid .card'));
-  try{
-    loading('กำลังบันทึกทั้งหมด…');
-    for (const card of cards){
-      const idx = parseInt(card.getAttribute('data-idx'),10);
-      const m = CURRENT.months[idx];
-      const planStatus = card.querySelector('.sel-plan').value || '';
-      const checkStatus= card.querySelector('.sel-check').value || '';
-      const note = card.querySelector('.ta-note').value || '';
-
-      const resp = await apiPost({
-        action: 'admin_update',
-        cid: CURRENT.cid,
-        month: m.month,
-        planStatus, checkStatus, note
-      });
-      if(!resp.ok) throw new Error(resp.error||('บันทึกไม่สำเร็จที่เดือน '+m.month));
-
-      // sync local
-      m.planStatus=planStatus; m.checkStatus=checkStatus; m.note=note;
-      m.tick=(planStatus==='ส่งแล้ว');
-      m.reportState=(checkStatus==='ตรวจสอบแล้ว')?'ok':(checkStatus==='ไม่ถูกต้อง'?'bad':'pending');
-    }
+    loading('กำลังอ่านไฟล์…');
+    const raw = await parseFileToJSON(file);
     Swal.close();
-    toastOK('บันทึกทั้งหมดสำเร็จ');
-    // reload mini-badges
-    renderMonths();
+
+    // normalize rows (ensure headers exist; keep unknown headers as is)
+    parsedRows = raw.map(r=>{
+      const obj = {};
+      // copy known headers (keep original header names)
+      PLAN_HEADERS.forEach(h => obj[h] = r[h] ?? '');
+      // keep additional headers too
+      Object.keys(r).forEach(k => { if (!(k in obj)) obj[k] = r[k]; });
+      // normalize CID
+      obj['หมายเลขบัตรประชาชน'] = (obj['หมายเลขบัตรประชาชน']||'').toString().replace(/[^\d]/g,'');
+      return obj;
+    }).filter(r=>r['หมายเลขบัตรประชาชน']); // keep only rows having CID
+
+    if (!parsedRows.length){ toastErr('ไม่พบข้อมูลที่มีเลขบัตร'); return; }
+
+    $('#previewBox').classList.remove('hidden');
+    buildPreviewTable(parsedRows);
+    $('#btnUpload').disabled = false;
   }catch(err){
     Swal.close(); toastErr(err.message);
   }
-}
-
-/* ===== Events ===== */
-document.getElementById('btnFetch').addEventListener('click', async ()=>{
-  const cid = onlyDigit(document.getElementById('cidInput').value);
-  if(!okCID(cid)){ toastErr('กรุณากรอกเลขบัตร 13 หลักให้ถูกต้อง'); return; }
-  await fetchByCID(cid);
 });
 
-document.getElementById('btnSaveAll').addEventListener('click', saveAll);
-document.getElementById('btnReload').addEventListener('click', async ()=>{
-  if(!CURRENT.cid) return;
-  await fetchByCID(CURRENT.cid);
+$('#btnUpload').addEventListener('click', async ()=>{
+  const month = $('#selMonth').value.trim();
+  if (!month){ toastErr('กรุณาเลือกเดือน'); return; }
+  if (!parsedRows.length){ toastErr('ยังไม่มีข้อมูลสำหรับอัปโหลด'); return; }
+
+  try{
+    loading('กำลังบันทึกลงชีต…');
+    // เพื่อไม่ให้ payload ใหญ่มาก เราจะส่งเฉพาะคอลัมน์มาตรฐาน + วันที่ส่ง + ส่วนเกินที่มี (Apps Script จะจัดการสร้างหัวตารางให้)
+    const payload = parsedRows;
+    const resp = await apiPost({
+      action: 'admin_bulk_plan',
+      month,
+      rows: payload
+    });
+    Swal.close();
+
+    if (!resp.ok) throw new Error(resp.error || 'บันทึกไม่สำเร็จ');
+    toastOK(`บันทึกสำเร็จ: อัปเดต ${resp.updated} แถว, เพิ่มใหม่ ${resp.inserted} แถว`);
+  }catch(err){
+    Swal.close(); toastErr(err.message);
+  }
+});
+
+/* ===== Quick check status by CID (ออปชันเล็ก ๆ) ===== */
+$('#btnQuick').addEventListener('click', async ()=>{
+  const cid = onlyDigit($('#quickCID').value);
+  if (!okCID(cid)){ toastErr('เลขบัตรไม่ถูกต้อง'); return; }
+  try{
+    loading('กำลังดึงสถานะ…');
+    const st = await apiGet({ action:'status', cid });
+    Swal.close();
+    if(!st.ok){ toastErr(st.error||'โหลดข้อมูลไม่สำเร็จ'); return; }
+    const okCount = (st.months||[]).filter(m=>m.reportState==='ok').length;
+    $('#quickResult').innerHTML = `
+      <div>ชื่อ: <b>${(st.info?.linename || st.info?.name || '-')}</b> · หมู่บ้าน: <b>${st.info?.moo || '-'}</b></div>
+      <div class="mt-1">เดือนทั้งหมด: ${st.months.length} • ผ่านตรวจ: <span class="badge b-ok">${okCount}</span></div>
+    `;
+  }catch(err){
+    Swal.close(); toastErr(err.message);
+  }
 });
 </script>
 </body>
