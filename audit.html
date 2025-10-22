@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=5, user-scalable=yes" />
+<title>Smart Care – Audit (แผน vs ผลการปฏิบัติงาน)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+  body{background: radial-gradient(120% 140% at 0% 0%, #C084FC 0%, #A78BFA 30%, #8B5CF6 55%, #F472B6 90%) fixed;}
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; --scale:1; font-size:calc(16px * var(--scale)); }
+  .glass{ background: rgba(255,255,255,.86); backdrop-filter: blur(14px); }
+  .card{ border-radius:18px; background:#fff; box-shadow:0 10px 24px rgba(168,85,247,.2); }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border-radius:12px; padding:.55rem .9rem; font-weight:700; color:#fff; background:linear-gradient(135deg,#8B5CF6 0%,#F472B6 100%);}
+  .btn-ghost{ background:#fff; color:#6b21a8; border:1px solid #e5e7eb; }
+  .btn-sm{ padding:.35rem .6rem; font-size:.85rem; border-radius:10px; }
+  .input,.select{ width:100%; border:1px solid #e5e7eb; border-radius:12px; padding:.55rem .75rem; }
+  .table{ width:100%; border-collapse:collapse;}
+  .table th,.table td{ border-bottom:1px solid #e5e7eb; padding:.55rem .6rem; font-size:.95rem; vertical-align:top; }
+  .badge{ display:inline-block; padding:.28rem .55rem; border-radius:9999px; font-weight:700; font-size:.8rem;}
+  .ok{ background:#D1FAE5; color:#065F46; }
+  .bad{ background:#FEE2E2; color:#991B1B; }
+  .warn{ background:#FEF3C7; color:#92400E; }
+  .muted{ color:#64748b; }
+  .mono{ font-variant-numeric: tabular-nums; font-feature-settings:"tnum"; }
+</style>
+</head>
+<body class="min-h-screen p-4">
+  <div class="max-w-6xl mx-auto space-y-4">
+    <header class="glass rounded-2xl p-4 text-white flex items-center justify-between"
+            style="background:linear-gradient(135deg,#8B5CF6 0%,#F472B6 100%); box-shadow:0 10px 24px rgba(147,51,234,.35);">
+      <div>
+        <div class="text-2xl font-extrabold">Smart Care – Audit</div>
+        <div class="text-white/90">เทียบ “แผน (plan_osm)” vs “ผลการปฏิบัติงาน (report_osm)” ต่อคน ต่อเดือน</div>
+      </div>
+      <div class="flex gap-2">
+        <button id="fontDown" class="btn-ghost px-3">A−</button>
+        <button id="fontUp" class="btn-ghost px-3">A+</button>
+      </div>
+    </header>
+
+    <!-- โหลดจาก API -->
+    <section class="glass rounded-2xl p-4">
+      <div class="grid md:grid-cols-[220px_1fr_auto_auto] gap-2">
+        <select id="selMonth" class="select">
+          <option value="">— เลือกเดือน —</option>
+          <option>ตุลาคม</option><option>พฤศจิกายน</option><option>ธันวาคม</option>
+          <option>มกราคม</option><option>กุมภาพันธ์</option><option>มีนาคม</option>
+          <option>เมษายน</option><option>พฤษภาคม</option><option>มิถุนายน</option>
+          <option>กรกฎาคม</option><option>สิงหาคม</option><option>กันยายน</option>
+        </select>
+        <input id="filterText" class="input" placeholder="ตัวกรองชื่อ/หมู่บ้าน/CID (ไม่จำเป็น)" />
+        <button id="btnLoadAPI" class="btn">โหลดจาก API</button>
+        <button id="btnBulkUpdate" class="btn-ghost">อัปเดตทั้งหมด → check_plan</button>
+      </div>
+      <p class="muted text-sm mt-2">
+        เกณฑ์ “<b>ผ่าน</b>”: ทุกข้อรายงาน ≥ แผน และ <code>วันที่บันทึก</code> ≥ <code>วันที่ส่ง</code>
+      </p>
+    </section>
+
+    <!-- ผลลัพธ์ -->
+    <section class="card p-4">
+      <div class="flex items-center justify-between">
+        <div class="font-bold">ผลการตรวจสอบ</div>
+        <div id="summaryBadge" class="badge warn hidden"></div>
+      </div>
+      <div id="resultBox" class="mt-3 overflow-auto">
+        <table class="table">
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+<script>
+/* ===== Config ===== */
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwX7JgyVpNT5gmrVcwY9sry_XPCntXOGKjP2oh2YAhxGgd23KM8XcrcksKWmiZMCk74/exec'; // <- ใส่ URL /exec
+const METRICS = [
+  '1.1','1.1.1','1.1.2','1.2','1.2.1','1.2.2',
+  '1.3','1.3.1','1.3.2','1.3.3','1.4',
+  '2.1','2.2','2.3','2.4','2.5','2.6',
+  '3.1','4.1','5.1','5.2',
+  '6(1)','6(2)','6(3)','7(1)','7(2)',
+  '8.1','8(1)','8(2)','9.1','9.2'
+];
+
+/* ===== UI helpers ===== */
+const $=s=>document.querySelector(s);
+function setScale(v){ const x=Math.min(1.7,Math.max(.9,v)); document.documentElement.style.setProperty('--scale',String(x)); }
+$('#fontDown').onclick=()=>{const c=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scale'))||1; setScale(c-.1);}
+$('#fontUp').onclick=()=>{const c=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scale'))||1; setScale(c+.1);}
+function loading(t='กำลังโหลด…'){ Swal.fire({title:t, allowOutsideClick:false, allowEscapeKey:false, didOpen:()=>Swal.showLoading()}); }
+function toastErr(msg){ Swal.fire({icon:'error', title:'ผิดพลาด', text:msg}); }
+function ok(msg){ Swal.fire({icon:'success', title:msg, timer:1200, showConfirmButton:false}); }
+function onlyDigit(s){ return String(s||'').replace(/[^\d]/g,''); }
+const n = v => { const x = Number(String(v??'').trim()); return isFinite(x)?x:0; };
+
+/* ===== Date utils ===== */
+function fmtLocal(d){
+  if(!(d instanceof Date) || isNaN(d)) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+function parseDateAny(v){
+  if (v == null || v === '') return null;
+  if (Object.prototype.toString.call(v) === '[object Date]') return isNaN(v) ? null : v;
+
+  const s = String(v).trim();
+  const be = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (be) {
+    let [_, dd, mm, yyyy] = be;
+    let y = parseInt(yyyy, 10);
+    if (y > 2400) y -= 543;
+    return new Date(y, parseInt(mm,10)-1, parseInt(dd,10));
+  }
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) { const d=new Date(s); return isNaN(d)?null:d; }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+  if (/^\d{3,6}$/.test(s)) {
+    const num = parseInt(s,10);
+    const epoch = new Date(Date.UTC(1899, 11, 30));
+    const ms = num * 86400000;
+    const d = new Date(epoch.getTime() + ms);
+    return isNaN(d) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  const d2=new Date(s);
+  return isNaN(d2)?null:d2;
+}
+
+/* ===== Month helpers for plan 'day only' ===== */
+const TH_MONTH_IDX = {
+  'มกราคม':0,'กุมภาพันธ์':1,'มีนาคม':2,'เมษายน':3,'พฤษภาคม':4,'มิถุนายน':5,
+  'กรกฎาคม':6,'สิงหาคม':7,'กันยายน':8,'ตุลาคม':9,'พฤศจิกายน':10,'ธันวาคม':11
+};
+function makeDateFromDay(day, selectedMonthName, hintDate){
+  const m = TH_MONTH_IDX[selectedMonthName];
+  if (m == null) return null;
+  let y = (hintDate instanceof Date && !isNaN(hintDate)) ? hintDate.getFullYear() : (new Date()).getFullYear();
+  return new Date(y, m, day);
+}
+function parsePlanDate(val, selectedMonthName, hintReportDate){
+  if (val == null || val === '') return null;
+  const s = String(val).trim();
+  if (/^\d{1,2}$/.test(s)) {
+    return makeDateFromDay(parseInt(s,10), selectedMonthName, hintReportDate);
+  }
+  return parseDateAny(val);
+}
+
+/* ===== API ===== */
+async function apiGet(params){
+  const url=new URL(API_BASE);
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  const res=await fetch(url,{method:'GET'});
+  return res.json();
+}
+async function apiPost(obj){
+  // ใช้ text/plain เพื่อลด preflight และเลี่ยง CORS เข้ม
+  const res = await fetch(API_BASE, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain'},
+    body: JSON.stringify(obj)
+  });
+  return res.json();
+}
+
+/* ===== Compare core ===== */
+function indexByCID(rows){ const m=new Map(); rows.forEach(r=>{ const cid=onlyDigit(r['หมายเลขบัตรประชาชน']||''); if(cid) m.set(cid,r); }); return m; }
+function mooNum(v){ const s=String(v||'').trim(); const m=s.match(/\d+/); return m?parseInt(m[0],10):9999; }
+function planIsBlank(p){ return METRICS.every(k => String(p[k] ?? '').toString().trim() === ''); }
+
+let LAST_ROWS = []; // เก็บผลล่าสุดเพื่อใช้ bulk update
+
+function compare(planRows, reportRows, selectedMonth, filter=''){
+  const pMap=indexByCID(planRows), rMap=indexByCID(reportRows);
+  const keys=new Set([...pMap.keys(), ...rMap.keys()]);
+  const fl=filter.trim().toLowerCase();
+  const out=[];
+  keys.forEach(cid=>{
+    const p=pMap.get(cid)||{};
+    const r=rMap.get(cid)||null;
+    const name=(p['ชื่อ-นามสกุล']||r?.['ชื่อ-นามสกุล']||'').toString();
+    const moo =(p['หมู่ที่']||r?.['หมู่ที่']||'').toString();
+
+    if(fl && !(name.toLowerCase().includes(fl) || moo.toLowerCase().includes(fl) || cid.includes(fl))) return;
+
+    // 1) แผนไม่ถูกต้อง (มีแถว แต่ตัวชี้วัดว่างทั้งหมด)
+    if (p && planIsBlank(p)) {
+      out.push({ cid, name, moo, status:'แผนไม่ถูกต้อง',
+        issues:['แผนไม่ถูกต้อง (ใส่วันที่ไม่ครบทุกข้อ)'],
+        datePlan: p['วันที่ส่ง']||'', dateReport: r?.['วันที่บันทึก']||'' });
+      return;
+    }
+
+    // 2) ยังไม่ส่งรายงาน
+    if(!r){
+      out.push({ cid, name, moo, status:'ยังไม่ส่งรายงานผลการปฏิบัติงาน',
+        issues:['ยังไม่ส่งรายงานผลการปฏิบัติงาน'],
+        datePlan: p['วันที่ส่ง']||'', dateReport:'' });
+      return;
+    }
+
+    const issues=[];
+    // 3) ตรวจตัวชี้วัด
+    METRICS.forEach(k=>{
+      const pv=n(p[k]); const rv=n(r[k]);
+      if(rv < pv) issues.push(`ข้อ ${k} รายงานมา ${rv} ในแผน ${pv}`);
+    });
+
+    // 4) ตรวจวันที่ (เลขวันของแผนยึดเดือนที่เลือก)
+    const dr = parseDateAny(r['วันที่บันทึก']);
+    const dp = parsePlanDate(p['วันที่ส่ง'], selectedMonth, dr);
+    let dateOk=true;
+    if(dp && dr){ dateOk = dr.getTime() >= dp.getTime(); }
+    else if(dp && !dr){ dateOk=false; }
+
+    if(!dateOk){
+      const dPlan = dp ? String(dp.getDate()) : '-';
+      const dRep  = dr ? String(dr.getDate()) : '-';
+      issues.push(`ส่งงานไม่ตรงวันที่กำหนดในแผน (กำหนดส่ง ${dPlan} แต่ส่ง ${dRep})`);
+    }
+
+    out.push({
+      cid, name, moo,
+      status: issues.length? 'ไม่ผ่าน':'ผ่าน',
+      issues,
+      datePlan: dp ? fmtLocal(dp) : (p['วันที่ส่ง']||''),
+      dateReport: dr ? fmtLocal(dr) : (r['วันที่บันทึก']||'')
+    });
+  });
+
+  // เรียงตามหมู่ → CID
+  out.sort((a,b)=>{
+    const am=mooNum(a.moo), bm=mooNum(b.moo);
+    if(am!==bm) return am-bm;
+    return a.cid.localeCompare(b.cid);
+  });
+
+  LAST_ROWS = out;
+  return out;
+}
+
+/* ===== Update to check_plan ===== */
+function toCheckPayload(row, month){
+  let checkStatus = 'ตรวจสอบแล้ว';
+  let note = '';
+  if (row.status !== 'ผ่าน') {
+    checkStatus = 'ไม่ถูกต้อง';
+    note = (row.issues||[]).join(' • ');
+  }
+  return {
+    action: 'admin_update',
+    cid: row.cid,
+    month: month,
+    checkStatus: checkStatus,
+    note: note
+  };
+}
+
+async function updateOne(row, month){
+  try{
+    const payload = toCheckPayload(row, month);
+    const name = row.name || row.cid;
+    const confirm = await Swal.fire({
+      title: 'อัปเดตผลตรวจ?',
+      html: `จะอัปเดต <b>${name}</b> เป็น <b>${payload.checkStatus}</b><br><small>${payload.note||'—'}</small>`,
+      icon: 'question', showCancelButton:true, confirmButtonText:'อัปเดต'
+    });
+    if (!confirm.isConfirmed) return;
+
+    loading('กำลังอัปเดต…');
+    const res = await apiPost(payload);
+    Swal.close();
+    if (!res.ok) return toastErr(res.error || 'อัปเดตไม่สำเร็จ');
+    ok('อัปเดตสำเร็จ');
+  }catch(err){ Swal.close(); toastErr(err.message); }
+}
+
+async function bulkUpdate(month){
+  if (!LAST_ROWS.length) return toastErr('ยังไม่มีผลลัพธ์');
+
+  // เตรียม payload ทั้งหมดในครั้งเดียว
+  const updates = LAST_ROWS.map(row => {
+    let checkStatus = 'ตรวจสอบแล้ว';
+    let note = '';
+    if (row.status !== 'ผ่าน') {
+      checkStatus = 'ไม่ถูกต้อง';
+      note = (row.issues || []).join(' • ');
+    }
+    return { cid: row.cid, checkStatus, note };
+  });
+
+  const confirm = await Swal.fire({
+    title: 'อัปเดตทั้งหมด?',
+    html: `จะอัปเดต <b>${updates.length}</b> รายการไปยัง <b>check_plan</b> ในเดือน <b>${month}</b>`,
+    icon: 'warning', showCancelButton:true, confirmButtonText:'อัปเดตทั้งหมด'
+  });
+  if (!confirm.isConfirmed) return;
+
+  try{
+    loading('กำลังอัปเดตรายการทั้งหมด…');
+    const res = await apiPost({
+      action: 'admin_update_batch',
+      month,
+      updates
+    });
+    Swal.close();
+    if (!res.ok) return toastErr(res.error || 'อัปเดตไม่สำเร็จ');
+    Swal.fire({icon:'success', title:'เสร็จสิ้น',
+      html:`อัปเดตสำเร็จ ${res.updated||0} รายการ<br>ข้าม ${res.skipped||0} รายการ`});
+  }catch(err){ Swal.close(); toastErr(err.message); }
+}
+
+
+/* ===== Render ===== */
+function render(rows){
+  const thead=$('#thead'), tbody=$('#tbody'), sum=$('#summaryBadge');
+  thead.innerHTML = `
+    <tr>
+      <th class="text-left">หมู่</th>
+      <th class="text-left">CID</th>
+      <th class="text-left">ชื่อ</th>
+      <th class="text-left">ผลการตรวจสอบ</th>
+      <th class="text-left">ข้อที่ไม่ถูกต้อง</th>
+      <th class="text-left">วันที่ส่ง/บันทึก</th>
+      <th class="text-left">อัปเดต</th>
+    </tr>`;
+  let fail=0, pending=0;
+  tbody.innerHTML = rows.map((r,i)=>{
+    const badge =
+      r.status==='ผ่าน' ? `<span class="badge ok">ผ่าน</span>` :
+      r.status==='ยังไม่ส่งรายงานผลการปฏิบัติงาน' ? `<span class="badge warn">${r.status}</span>` :
+      `<span class="badge bad">${r.status}</span>`;
+    if(r.status==='ยังไม่ส่งรายงานผลการปฏิบัติงาน') pending++;
+    else if(r.status!=='ผ่าน') fail++;
+
+    const details = r.issues && r.issues.length
+      ? `<ul class="list-disc ml-5">${r.issues.map(s=>`<li>${s}</li>`).join('')}</ul>`
+      : `<span class="muted">—</span>`;
+    return `
+      <tr>
+        <td class="mono">${r.moo||'-'}</td>
+        <td class="mono">${r.cid}</td>
+        <td>${r.name||'-'}</td>
+        <td>${badge}</td>
+        <td>${details}</td>
+        <td class="mono">
+          <div>แผน: ${r.datePlan||'-'}</div>
+          <div>รายงาน: ${r.dateReport||'-'}</div>
+        </td>
+        <td>
+          <button class="btn btn-sm" onclick="updateOne(LAST_ROWS[${i}], document.querySelector('#selMonth').value)">
+            อัปเดตไปที่ check_plan
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  sum.classList.remove('hidden');
+  const total=rows.length;
+  sum.textContent = `สรุป: ผ่าน ${total - fail - pending} • ไม่ผ่าน ${fail} • ยังไม่ส่ง ${pending} / ทั้งหมด ${total}`;
+  sum.className = 'badge ' + (fail||pending? 'bad':'ok');
+}
+
+/* ===== Actions ===== */
+async function loadAPI(){
+  const month=$('#selMonth').value.trim();
+  const filter=$('#filterText').value||'';
+  if(!month) return toastErr('กรุณาเลือกเดือน');
+  try{
+    loading('กำลังโหลดจาก API…');
+    const [plan, report]=await Promise.all([
+      apiGet({action:'audit_fetch_plan', month}),
+      apiGet({action:'audit_fetch_report', month})
+    ]);
+    Swal.close();
+    if(!plan.ok) return toastErr(plan.error||'โหลดแผนไม่สำเร็จ');
+    if(!report.ok) return toastErr(report.error||'โหลดรายงานไม่สำเร็จ');
+
+    const rows=compare(plan.rows||[], report.rows||[], month, filter);
+    render(rows);
+    ok('ตรวจสอบสำเร็จ');
+  }catch(err){ Swal.close(); toastErr(err.message); }
+}
+
+document.getElementById('btnLoadAPI').onclick = loadAPI;
+document.getElementById('btnBulkUpdate').onclick = ()=> {
+  const month=document.getElementById('selMonth').value.trim();
+  if(!month) return toastErr('กรุณาเลือกเดือน');
+  bulkUpdate(month);
+};
+</script>
+</body>
+</html>
