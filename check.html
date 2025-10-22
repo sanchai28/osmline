@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
-<title>Smart Care – ตรวจสอบแผน vs ผลการปฏิบัติงาน</title>
+<title>Smart Care – ตรวจสอบแผน vs ผลการปฏิบัติงาน (JSONP-only)</title>
 
-<!-- Tailwind & SweetAlert2 (CDN; เหมาะสำหรับทดสอบ/ดีบัก) -->
+<!-- Tailwind & SweetAlert2 (CDN สำหรับทดสอบ/ใช้งานเร็ว) -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -124,7 +124,7 @@
 
 <script>
 /* ========= Config ========= */
-const API_BASE = 'https://script.google.com/macros/s/AKfycbwA0ipym2STqDWYYHOv9-v3a1Cu_fxbc3IYX2XIrDbztnFX3H2poy8gJ8b_ise41IB3/exec'; // ใส่ URL /exec ของ check.gs
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwA0ipym2STqDWYYHOv9-v3a1Cu_fxbc3IYX2XIrDbztnFX3H2poy8gJ8b_ise41IB3/exec'; // ใส่ URL /exec ของ check.gs (ที่รองรับ callback=...)
 
 /* ========= A11y font scale ========= */
 const SCALE_KEY='check_a11y_scale';
@@ -139,21 +139,9 @@ const $ = s => document.querySelector(s);
 function loading(title='กำลังโหลด…'){ Swal.fire({title, allowOutsideClick:false, allowEscapeKey:false, didOpen:()=>Swal.showLoading()}); }
 function toastErr(msg='เกิดข้อผิดพลาด'){ Swal.fire({icon:'error', title:'ไม่สำเร็จ', text:msg}); }
 function toastOK(msg='สำเร็จ'){ Swal.fire({icon:'success', title:msg, timer:1200, showConfirmButton:false}); }
-function onlyDigit(s){ return String(s||'').replace(/[^\d]/g,''); }
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
 
-/* ========= JSONP Fallback ========= */
-// ใช้ fetch ถ้าได้; ถ้าโดน CORS → สลับไป JSONP อัตโนมัติ
-async function apiGet(params){
-  const url = new URL(API_BASE);
-  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
-  try{
-    const res = await fetch(url.toString(), { method:'GET' });
-    return await res.json();
-  }catch(err){
-    return await jsonp(params);
-  }
-}
+/* ========= JSONP (เท่านั้น) ========= */
 function jsonp(params){
   return new Promise((resolve, reject)=>{
     const cb = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
@@ -185,10 +173,10 @@ $('#onlyFailed').addEventListener('change', ()=> renderTable(currentData));
 $('#compact').addEventListener('change', ()=> renderTable(currentData));
 $('#btnCopy').addEventListener('click', copyFailedSummary);
 
-/* ========= Load months ========= */
+/* ========= Load months (JSONP) ========= */
 async function loadMonths(){
   try{
-    const js = await apiGet({action:'months'});
+    const js = await jsonp({action:'months'});
     if(!js.ok) throw new Error(js.error||'โหลดรายชื่อเดือนไม่สำเร็จ');
     const sel = $('#selMonth'); sel.innerHTML='';
     sel.append(new Option('— เลือกเดือน —',''));
@@ -196,11 +184,11 @@ async function loadMonths(){
   }catch(err){ toastErr(err.message); }
 }
 
-/* ========= Compare & Render ========= */
+/* ========= Compare & Render (JSONP) ========= */
 async function runCompare(month){
   try{
     loading('กำลังตรวจสอบ…');
-    const js = await apiGet({action:'compare', month});
+    const js = await jsonp({action:'compare', month});
     Swal.close();
     if(!js.ok) throw new Error(js.error||'ดึงข้อมูลไม่สำเร็จ');
     currentData = js;
