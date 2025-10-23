@@ -10,121 +10,328 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <style>
-    /* พื้นหลังไล่สี */
+    /* ฟอนต์ที่อ่านง่าย */
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap');
+    
     body{
-      background: radial-gradient(120% 140% at 0% 0%, #C084FC 0%, #A78BFA 30%, #8B5CF6 55%, #F472B6 90%) fixed;
+      font-family: 'Sarabun', sans-serif;
+      background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+      min-height: 100vh;
     }
+    
     .safe-area{ padding-bottom: env(safe-area-inset-bottom); }
 
-    /* เคารพการปรับขนาดอักษรของระบบ + ตัวปรับในแอป */
+    /* ระบบขนาดฟอนต์ที่ใหญ่ขึ้น */
     html{
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
-      --a11y-scale: 1;                    /* ตัวคูณฟอนต์ในแอป (A-/A+) */
-      font-size: calc(16px * var(--a11y-scale));
+      --a11y-scale: 1.15; /* เริ่มต้นใหญ่กว่าเดิม 15% */
+      font-size: calc(17px * var(--a11y-scale));
     }
 
-    /* กลาส + เงาแบบใหม่ */
-    .glass{ background: rgba(255,255,255,.82); backdrop-filter: blur(16px); }
-    .soft-shadow{ box-shadow: 0 10px 25px -5px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.07); }
-
-    /* การ์ดเดือน */
-    .month-card{
-      border-radius: 1.375rem;
-      padding: 1rem;
-      background: rgba(255,255,255,.95);
+    /* การ์ดแบบ Flat */
+    .card-flat{
+      background: white;
+      border-radius: 16px;
+      border: 2px solid #e2e8f0;
+      padding: 1.25rem;
+      transition: all 0.2s ease;
     }
+    .card-flat:active{
+      transform: scale(0.98);
+      border-color: #cbd5e1;
+    }
+
+    /* Header การ์ด */
+    .card-header{
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+    }
+
+    /* เดือนแบบ Flat */
     .month-badge{
-      display:inline-flex; align-items:center; gap: .5rem;
-      font-weight: 800; font-size: 1.125rem; color:#4c1d95;
-      background: linear-gradient(135deg,#ede9fe,#ffe4f0);
-      padding: .5rem .75rem; border-radius: .9rem;
-    }
-    .tick{ width: 1.6rem; height: 1.6rem; }
-
-    /* ชิปสถานะ */
-    .chip{
-      display:inline-block;
-      min-width: 10ch;
-      padding: .6em .8em;
-      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
       font-weight: 700;
-      font-size: 0.9rem;
-      line-height: 1;
-      white-space: nowrap;
-      text-align:center;
+      font-size: 1.25rem;
+      color: #1e40af;
+      background: #dbeafe;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      border: 2px solid #93c5fd;
     }
 
-    /* กริดการ์ด */
-    .cards{ display:grid; grid-template-columns: 1fr; gap: 1rem; }
-    @media (min-width: 430px){ .cards{ grid-template-columns: 1fr 1fr; } }
+    /* ไอคอนสถานะใหญ่ชัดเจน */
+    .status-icon{
+      width: 2rem;
+      height: 2rem;
+      flex-shrink: 0;
+    }
 
-    /* ฟอนต์สบายตา (rem/viewport) */
-    .big    { font-size: clamp(1rem, 3.8vw, 1.125rem); }
-    .bigger { font-size: clamp(1.125rem, 4.2vw, 1.25rem); }
+    /* ชิปสถานะแบบ Flat ขนาดใหญ่ */
+    .chip{
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      border: 2px solid;
+      min-width: 140px;
+      justify-content: center;
+    }
+    .chip-plan-ok{
+      background: #dcfce7;
+      color: #15803d;
+      border-color: #86efac;
+    }
+    .chip-plan-warn{
+      background: #fef3c7;
+      color: #b45309;
+      border-color: #fcd34d;
+    }
+    .chip-check-ok{
+      background: #dcfce7;
+      color: #15803d;
+      border-color: #86efac;
+    }
+    .chip-check-bad{
+      background: #fee2e2;
+      color: #b91c1c;
+      border-color: #fca5a5;
+    }
+    .chip-check-wait{
+      background: #f3f4f6;
+      color: #4b5563;
+      border-color: #d1d5db;
+    }
 
-    /* ลดแอนิเมชันหากผู้ใช้ไม่ต้องการ */
+    /* ปุ่มแอคชั่นใหญ่ชัด */
+    .btn-primary{
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      font-weight: 700;
+      font-size: 1.15rem;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      border: none;
+      width: 100%;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    .btn-primary:active{
+      transform: translateY(2px);
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+
+    /* ปุ่มปรับฟอนต์ขนาดใหญ่ */
+    .font-btn{
+      width: 48px;
+      height: 48px;
+      background: white;
+      color: #2563eb;
+      border-radius: 12px;
+      border: 2px solid #93c5fd;
+      font-weight: 700;
+      font-size: 1.25rem;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .font-btn:active{
+      background: #dbeafe;
+      transform: scale(0.95);
+    }
+
+    /* อินพุตขนาดใหญ่อ่านง่าย */
+    .input-large{
+      width: 100%;
+      padding: 1.25rem;
+      border: 3px solid #cbd5e1;
+      border-radius: 12px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      background: white;
+      transition: all 0.2s;
+    }
+    .input-large:focus{
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+
+    /* กริด responsive */
+    .cards-grid{
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    @media (min-width: 640px){
+      .cards-grid{
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* ข้อความสำคัญ */
+    .text-xl{ font-size: 1.35rem; }
+    .text-2xl{ font-size: 1.65rem; }
+    .text-3xl{ font-size: 2rem; }
+
+    /* ลดแอนิเมชัน */
     @media (prefers-reduced-motion: reduce){
-      * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* หมายเหตุแบบเน้น */
+    .note-box{
+      background: #fef2f2;
+      border: 2px solid #fca5a5;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-top: 0.75rem;
+    }
+    .note-title{
+      color: #b91c1c;
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+    .note-content{
+      color: #991b1b;
+      font-size: 1rem;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    /* Status row ที่ชัดเจน */
+    .status-row{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      background: #f8fafc;
+      border-radius: 10px;
+      border: 2px solid #e2e8f0;
+      gap: 1rem;
+    }
+    .status-label{
+      font-size: 1.1rem;
+      color: #475569;
+      font-weight: 600;
+      flex: 1;
     }
   </style>
 </head>
-<body class="min-h-screen flex items-start justify-center p-4 safe-area">
-  <div class="w-full max-w-md">
+<body class="p-4 safe-area">
+  <div class="w-full max-w-2xl mx-auto">
 
-    <header class="text-slate-800 flex items-center justify-between" style="text-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-      <div class="text-2xl font-bold tracking-wide">อสม.โคกเจริญ</div>
+    <!-- Header แบบ Flat -->
+    <header class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white text-2xl font-bold">
+          อ
+        </div>
+        <div>
+          <div class="text-2xl font-bold text-gray-800">อสม.โคกเจริญ</div>
+          <div class="text-sm text-gray-600">ระบบติดตามงาน</div>
+        </div>
+      </div>
+      <!-- ปุ่มปรับฟอนต์ -->
       <div class="flex items-center gap-2">
-        <button id="font-down" class="w-9 h-9 rounded-full bg-white/30 hover:bg-white/50 transition-colors grid place-items-center font-bold" aria-label="ลดขนาดอักษร">A−</button>
-        <button id="font-up"   class="w-9 h-9 rounded-full bg-white/30 hover:bg-white/50 transition-colors grid place-items-center font-bold" aria-label="เพิ่มขนาดอักษร">A+</button>
+        <button id="font-down" class="font-btn" aria-label="ลดขนาดตัวอักษร">A−</button>
+        <button id="font-up" class="font-btn" aria-label="เพิ่มขนาดตัวอักษร">A+</button>
       </div>
     </header>
 
-    <section class="glass soft-shadow rounded-3xl mt-4 p-5 text-slate-800">
-      <div class="flex items-center gap-4">
-        <img id="hero-avatar" class="w-14 h-14 rounded-2xl object-cover" src="" alt="">
-        <div class="leading-tight">
-          <div class="text-slate-600 big">สวัสดี</div>
-          <div id="hero-name" class="bigger font-semibold">-</div>
-        </div>
-      </div>
-      <div class="mt-4 rounded-2xl p-4 text-white"
-           style="background: linear-gradient(135deg,#A78BFA 0%,#F472B6 100%); box-shadow:0 10px 22px rgba(168,85,247,.35);">
-        <div class="opacity-90 big">เลขบัตรประชาชน</div>
-        <div id="hero-cid" class="text-2xl font-extrabold tracking-wide">-</div>
-        <div class="mt-1 opacity-90 big">หมู่บ้าน <span id="hero-moo">-</span></div>
-      </div>
-    </section>
-
-    <section class="mt-4">
-      <div id="cards" class="cards"></div>
-    </section>
-
-    <section id="view-register" class="glass soft-shadow rounded-3xl mt-4 p-5 hidden">
-        <div class="flex items-center gap-3">
-          <img id="reg-avatar" class="w-12 h-12 rounded-2xl object-cover" src="" alt="">
-          <div class="leading-tight">
-            <div class="text-slate-600 big">ลงทะเบียนใช้งานครั้งแรก</div>
-            <div id="reg-name" class="bigger font-semibold">-</div>
+    <!-- Hero Card -->
+    <section class="card-flat mb-6">
+      <div class="card-header">
+        <div class="flex items-center gap-4">
+          <img id="hero-avatar" class="w-16 h-16 rounded-xl object-cover border-2 border-white" src="" alt="รูปโปรไฟล์">
+          <div>
+            <div class="text-sm opacity-90">สวัสดี</div>
+            <div id="hero-name" class="text-2xl font-bold">-</div>
           </div>
         </div>
-        <label class="block font-bold mt-4 mb-2 text-slate-700 big">หมายเลขบัตรประชาชน (13 หลัก)</label>
-        <input id="cid" inputmode="numeric" maxlength="13"
-               class="w-full rounded-2xl px-4 py-3.5 outline-none ring-2 ring-slate-200 focus:ring-violet-500 focus:ring-offset-2 transition-all duration-200 bg-white/80 big"
-               placeholder="กรอกเลขบัตรประชาชน">
-        <button id="btn-register"
-          class="mt-5 w-full rounded-2xl py-3.5 font-bold text-white transition-transform active:scale-[0.98] big"
-          style="background: linear-gradient(135deg,#A78BFA 0%,#F472B6 100%); box-shadow:0 10px 20px rgba(168,85,247,.25);">
-          ยืนยันลงทะเบียน
-        </button>
-      </section>
+      </div>
+      
+      <div class="space-y-3">
+        <div class="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
+          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+          </svg>
+          <div class="flex-1">
+            <div class="text-sm text-gray-600">เลขบัตรประชาชน</div>
+            <div id="hero-cid" class="text-xl font-bold text-gray-800 tracking-wider">-</div>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-3 p-3 bg-green-50 rounded-lg border-2 border-green-200">
+          <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          </svg>
+          <div>
+            <div class="text-sm text-gray-600">หมู่บ้าน</div>
+            <div id="hero-moo" class="text-xl font-bold text-gray-800">-</div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <div id="loader" class="flex items-center justify-center text-white mt-10 big">
-      <svg class="animate-spin h-7 w-7 mr-2" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="white" stroke-width="4"></circle>
-        <path class="opacity-75" fill="white" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+    <!-- การ์ดแยกเดือน -->
+    <section>
+      <div class="mb-4">
+        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          รายงานประจำเดือน
+        </h2>
+      </div>
+      <div id="cards" class="cards-grid"></div>
+    </section>
+
+    <!-- Register View -->
+    <section id="view-register" class="card-flat hidden">
+      <div class="card-header">
+        <div class="flex items-center gap-4">
+          <img id="reg-avatar" class="w-14 h-14 rounded-xl object-cover border-2 border-white" src="" alt="รูปโปรไฟล์">
+          <div>
+            <div class="text-sm opacity-90">ลงทะเบียนครั้งแรก</div>
+            <div id="reg-name" class="text-xl font-bold">-</div>
+          </div>
+        </div>
+      </div>
+      
+      <label class="block font-bold text-gray-700 mb-3 text-lg">
+        หมายเลขบัตรประชาชน (13 หลัก)
+      </label>
+      <input id="cid" inputmode="numeric" maxlength="13"
+             class="input-large"
+             placeholder="กรอกเลขบัตรประชาชน 13 หลัก">
+      <button id="btn-register" class="btn-primary mt-4">
+        ยืนยันลงทะเบียน
+      </button>
+    </section>
+
+    <!-- Loader -->
+    <div id="loader" class="flex flex-col items-center justify-center mt-16">
+      <svg class="animate-spin h-12 w-12 text-blue-600 mb-4" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
       </svg>
-      <span>กำลังโหลด…</span>
+      <span class="text-xl text-gray-700 font-semibold">กำลังโหลด...</span>
     </div>
 
   </div>
@@ -141,84 +348,64 @@
   const onlyDigit = s => String(s||'').replace(/[^\d]/g,'');
   const okCID = s => onlyDigit(s).length===13;
 
-  function tick(on){
-    return on
-      ? `<svg class="tick text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>`
-      : `<svg class="tick text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>`;
-  }
-
-  function statusIcon(status) {
-    switch (status) {
-      case 'ok':
-        return `<svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`;
-      case 'bad':
-        return `<svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>`;
-      case 'wait':
-        return `<svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" /></svg>`;
-      default:
-        return '';
+  function tickIcon(on){
+    if(on){
+      return `<svg class="status-icon text-green-600" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+      </svg>`;
     }
+    return `<svg class="status-icon text-gray-300" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+    </svg>`;
   }
 
-  function chipTemplate(text, status) {
-    const colors = {
-      'plan-ok': 'bg-emerald-100 text-emerald-800',
-      'plan-warn': 'bg-amber-100 text-amber-800',
-      'check-ok': 'bg-emerald-100 text-emerald-800',
-      'check-bad': 'bg-red-100 text-red-800',
-      'check-wait': 'bg-gray-200 text-gray-700',
-    };
-    const iconStatusMap = {
-        'check-ok': 'ok',
-        'check-bad': 'bad',
-        'check-wait': 'wait',
-    }
-    return `
-      <span class="inline-flex items-center gap-2 chip ${colors[status]}">
-        ${statusIcon(iconStatusMap[status] || '')}
-        <span>${text}</span>
-      </span>
-    `;
-  }
-
-  /* การ์ดเดือน (รวมหมายเหตุจาก check_plan.note_1..note_12 เมื่อไม่ผ่าน) */
+  /* การ์ดเดือนแบบ Flat Design */
   function cardTemplate(r){
     const planTxt = r.planStatus || 'ยังไม่ได้ส่ง';
-    const planCls = r.tick ? 'plan-ok' : 'plan-warn';
+    const planCls = r.tick ? 'chip-plan-ok' : 'chip-plan-warn';
 
-    // ตรวจสอบผลรายงาน + หมายเหตุ
-    let chkTxt='รอตรวจสอบ', chkCls='check-wait', noteHtml='';
+    // ตรวจสอบผลรายงาน
+    let chkTxt='รอตรวจสอบ', chkCls='chip-check-wait', noteHtml='';
     const isBad = (r.reportState === 'bad') || /ไม่ผ่าน/.test(r.checkStatus || '');
-    if (!isBad && r.reportState === 'ok'){ chkTxt='ถูกต้อง'; chkCls='check-ok'; }
-    else if (isBad){
-      chkTxt='ไม่ถูกต้อง'; chkCls='check-bad';
+    
+    if (!isBad && r.reportState === 'ok'){
+      chkTxt='ถูกต้อง'; 
+      chkCls='chip-check-ok';
+    } else if (isBad){
+      chkTxt='ไม่ถูกต้อง'; 
+      chkCls='chip-check-bad';
+      
       if (r.note && String(r.note).trim()){
         const formattedNote = String(r.note)
           .replace(/•/g, '\n•')
           .replace(/^\n/, '')
           .trim();
-        noteHtml = `<div class="mt-2.5 p-3 rounded-xl bg-red-50 text-red-800 text-[0.95rem] leading-relaxed">
-          <div class="font-semibold mb-1">หมายเหตุจากเจ้าหน้าที่:</div>
-          <div class="whitespace-pre-line">${formattedNote}</div>
-        </div>`;
+        noteHtml = `
+          <div class="note-box">
+            <div class="note-title">📌 หมายเหตุที่ต้องแก้ไข:</div>
+            <div class="note-content">${formattedNote}</div>
+          </div>
+        `;
       }
     }
 
     return `
-      <div class="month-card soft-shadow">
-        <div class="flex items-center justify-between">
-          <div class="month-badge">${tick(r.tick)} <span>${r.month}</span></div>
+      <div class="card-flat">
+        <div class="month-badge mb-4">
+          ${tickIcon(r.tick)}
+          <span>${r.month}</span>
         </div>
-        <div class="mt-4 space-y-3">
-          <div class="flex items-center justify-between">
-            <div class="text-slate-600 big">สถานะส่งแผน</div>
-            ${chipTemplate(planTxt, planCls)}
+        
+        <div class="space-y-3">
+          <div class="status-row">
+            <div class="status-label">📋 สถานะส่งแผน</div>
+            <span class="chip ${planCls}">${planTxt}</span>
           </div>
-          <hr class="border-slate-200/80">
+          
           <div>
-            <div class="flex items-center justify-between">
-              <div class="text-slate-600 big">รายงาน อสม.1</div>
-              ${chipTemplate(chkTxt, chkCls)}
+            <div class="status-row">
+              <div class="status-label">📊 รายงาน อสม.1</div>
+              <span class="chip ${chkCls}">${chkTxt}</span>
             </div>
             ${noteHtml}
           </div>
@@ -227,39 +414,44 @@
     `;
   }
 
-  /* ===== API (simple request → เลี่ยง CORS) ===== */
+  /* ===== API ===== */
   async function apiGet(params){
     const url = new URL(API_BASE);
     Object.entries(params).forEach(([k,v])=>url.searchParams.set(k, v));
     const res = await fetch(url.toString(), { method:'GET' });
     return res.json();
   }
+  
   async function apiPost(body){
     const res = await fetch(API_BASE, {
       method:'POST',
-      headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // simple request → no preflight
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' },
       body: JSON.stringify(body)
     });
     return res.json();
   }
 
-  /* ===== A11y Font Scale (ปุ่ม A-/A+) ===== */
+  /* ===== A11y Font Scale ===== */
   const SCALE_KEY = 'osm_a11y_scale';
+  
   function applyScale(v){
-    const val = Math.min(1.6, Math.max(0.9, v));
+    const val = Math.min(1.8, Math.max(1.0, v));
     document.documentElement.style.setProperty('--a11y-scale', String(val));
     localStorage.setItem(SCALE_KEY, String(val));
   }
+  
   function loadScale(){
-    const saved = parseFloat(localStorage.getItem(SCALE_KEY) || '1');
-    applyScale(isNaN(saved) ? 1 : saved);
+    const saved = parseFloat(localStorage.getItem(SCALE_KEY) || '1.15');
+    applyScale(isNaN(saved) ? 1.15 : saved);
   }
+  
   $('#font-down')?.addEventListener('click', ()=>{
-    const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--a11y-scale')) || 1;
+    const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--a11y-scale')) || 1.15;
     applyScale(cur - 0.1);
   });
+  
   $('#font-up')?.addEventListener('click', ()=>{
-    const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--a11y-scale')) || 1;
+    const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--a11y-scale')) || 1.15;
     applyScale(cur + 0.1);
   });
 
@@ -268,18 +460,27 @@
   let monthsCache=[];
 
   function loading(title='กำลังประมวลผล'){
-    Swal.fire({title, allowOutsideClick:false, allowEscapeKey:false, didOpen:()=>Swal.showLoading()});
+    Swal.fire({
+      title, 
+      allowOutsideClick:false, 
+      allowEscapeKey:false,
+      customClass: {
+        title: 'text-xl font-bold'
+      },
+      didOpen:()=>Swal.showLoading()
+    });
   }
 
   async function main(){
     try{
-      loadScale(); // โหลดสเกลก่อนแสดงผล
+      loadScale();
 
       await liff.init({ liffId: LIFF_ID });
       if (!liff.isLoggedIn()) liff.login();
 
       const prof = await liff.getProfile();
-      liffProfile = prof; userId = prof.userId;
+      liffProfile = prof; 
+      userId = prof.userId;
 
       const init = await apiGet({ action:'getorinit', uid:userId });
       if (!init.ok) throw new Error(init.error||'init error');
@@ -296,16 +497,34 @@
         $('#reg-name').textContent = prof.displayName || '-';
       }
     }catch(err){
-      hide('#loader'); Swal.fire('เกิดข้อผิดพลาด', err.message, 'error');
+      hide('#loader'); 
+      Swal.fire({
+        title: 'เกิดข้อผิดพลาด',
+        text: err.message,
+        icon: 'error',
+        customClass: {
+          title: 'text-xl font-bold'
+        }
+      });
     }
   }
 
   async function renderHome(cid){
-    loading('กำลังโหลดข้อมูล…');
+    loading('กำลังโหลดข้อมูล...');
     const st = await apiGet({ action:'status', cid });
     Swal.close();
 
-    if (!st.ok){ Swal.fire('โหลดข้อมูลไม่สำเร็จ', st.error||'', 'error'); return; }
+    if (!st.ok){ 
+      Swal.fire({
+        title: 'โหลดข้อมูลไม่สำเร็จ',
+        text: st.error||'',
+        icon: 'error',
+        customClass: {
+          title: 'text-xl font-bold'
+        }
+      }); 
+      return; 
+    }
 
     monthsCache = st.months || [];
     $('#hero-name').textContent = st.info?.linename || liffProfile?.displayName || '-';
@@ -320,8 +539,19 @@
   /* ลงทะเบียนครั้งแรก */
   $('#btn-register')?.addEventListener('click', async ()=>{
     const cid = onlyDigit($('#cid').value);
-    if (!okCID(cid)){ Swal.fire('ข้อมูลไม่ถูกต้อง','กรุณากรอกเลขบัตร 13 หลัก','warning'); return; }
-    loading('กำลังลงทะเบียน…');
+    if (!okCID(cid)){ 
+      Swal.fire({
+        title: 'ข้อมูลไม่ถูกต้อง',
+        text: 'กรุณากรอกเลขบัตร 13 หลัก',
+        icon: 'warning',
+        customClass: {
+          title: 'text-xl font-bold'
+        }
+      }); 
+      return; 
+    }
+    
+    loading('กำลังลงทะเบียน...');
     const rs = await apiPost({
       action:'register',
       cid,
@@ -330,10 +560,28 @@
       linepic:  liffProfile?.pictureUrl || ''
     });
     Swal.close();
-    if (!rs.ok){ Swal.fire('ลงทะเบียนไม่สำเร็จ', rs.error||'', 'error'); return; }
+    
+    if (!rs.ok){ 
+      Swal.fire({
+        title: 'ลงทะเบียนไม่สำเร็จ',
+        text: rs.error||'',
+        icon: 'error',
+        customClass: {
+          title: 'text-xl font-bold'
+        }
+      }); 
+      return; 
+    }
+    
     boundCID = cid;
-    hide('#view-register');
-    Swal.fire('สำเร็จ','ลงทะเบียนเรียบร้อย','success');
+    Swal.fire({
+      title: 'สำเร็จ',
+      text: 'ลงทะเบียนเรียบร้อย',
+      icon: 'success',
+      customClass: {
+        title: 'text-xl font-bold'
+      }
+    });
     await renderHome(boundCID);
   });
 
