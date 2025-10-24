@@ -3,365 +3,186 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
-  <title>อสม.โคกเจริญ</title>
-
+  <title>อสม.โคกเจริญ — Purple UI</title>
+  
+  <!-- Libs -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <style>
-    /* ฟอนต์ที่อ่านง่าย */
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap');
-    
-    body{
-      font-family: 'Sarabun', sans-serif;
-      background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
-      min-height: 100vh;
+    :root{
+      --bg: #f5f3ff;           /* violet-50 */
+      --card: #ffffff;
+      --vio-500:#8b5cf6;       /* violet-500 */
+      --vio-600:#7c3aed;       /* violet-600 */
+      --vio-700:#6d28d9;       /* violet-700 */
+      --mint:#34d399;          /* emerald-400 */
+      --soft-shadow: 0 8px 24px rgba(109, 40, 217, .18);
+      --neo-in: inset 6px 6px 12px rgba(0,0,0,.06), inset -6px -6px 12px rgba(255,255,255,.9);
+      --neo-out: 6px 6px 16px rgba(109,40,217,.18), -6px -6px 16px rgba(255,255,255,.9);
     }
-    
-    .safe-area{ padding-bottom: env(safe-area-inset-bottom); }
+    html{ font-family:'Sarabun', system-ui, -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color:#0f172a; }
+    body{ min-height:100svh; }
 
-    /* ระบบขนาดฟอนต์ที่ใหญ่ขึ้น */
-    html{
-      -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;
-      --a11y-scale: 1.15; /* เริ่มต้นใหญ่กว่าเดิม 15% */
-      font-size: calc(17px * var(--a11y-scale));
+    /* Purple glass header */
+    .hero-wrap{ position:relative; }
+    .hero-bg{
+      background: radial-gradient(120% 120% at 10% 0%, #c4b5fd 0%, #a78bfa 40%, #7c3aed 100%);
+      height: 220px;
+      border-bottom-left-radius: 36px;
+      border-bottom-right-radius: 36px;
+      box-shadow: var(--soft-shadow);
     }
-
-    /* การ์ดแบบ Flat */
-    .card-flat{
-      background: white;
-      border-radius: 16px;
-      border: 2px solid #e2e8f0;
-      padding: 1.25rem;
-      transition: all 0.2s ease;
-    }
-    .card-flat:active{
-      transform: scale(0.98);
-      border-color: #cbd5e1;
-    }
-
-    /* Header การ์ด */
-    .card-header{
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      color: white;
-      padding: 1rem 1.25rem;
-      border-radius: 12px;
-      margin-bottom: 1rem;
+    .hero-wave{
+      position:absolute; inset:0; pointer-events:none; opacity:.25;
+      background:
+        radial-gradient(80px 80px at 20% 35%, rgba(255,255,255,.8) 0 50%, transparent 51%),
+        radial-gradient(120px 120px at 70% 20%, rgba(255,255,255,.5) 0 40%, transparent 41%);
+      mix-blend-mode:soft-light;
     }
 
-    /* เดือนแบบ Flat */
-    .month-badge{
-      display: inline-flex;
-      align-items: center;
-      gap: 0.75rem;
-      font-weight: 700;
-      font-size: 1.25rem;
-      color: #1e40af;
-      background: #dbeafe;
-      padding: 0.75rem 1rem;
-      border-radius: 12px;
-      border: 2px solid #93c5fd;
+    .glass-card{
+      background: rgba(255,255,255,.88);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,.7);
+      border-radius: 18px;
+      box-shadow: var(--neo-out);
     }
+    .neo-in{ box-shadow: var(--neo-in); }
 
-    /* ไอคอนสถานะใหญ่ชัดเจน */
-    .status-icon{
-      width: 2rem;
-      height: 2rem;
-      flex-shrink: 0;
-    }
+    .chip{ display:inline-flex; align-items:center; gap:.55em; padding:.5rem .85rem; border-radius:999px; font-weight:800; font-size:0.95rem; }
+    .chip-ok{ color:#065f46; background:#d1fae5; }
+    .chip-warn{ color:#92400e; background:#fef3c7; }
+    .chip-bad{ color:#991b1b; background:#fee2e2; }
+    .chip-wait{ color:#334155; background:#f1f5f9; }
 
-    /* ชิปสถานะแบบ Flat ขนาดใหญ่ */
-    .chip{
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.25rem;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 1.05rem;
-      border: 2px solid;
-      min-width: 140px;
-      justify-content: center;
-    }
-    .chip-plan-ok{
-      background: #dcfce7;
-      color: #15803d;
-      border-color: #86efac;
-    }
-    .chip-plan-warn{
-      background: #fef3c7;
-      color: #b45309;
-      border-color: #fcd34d;
-    }
-    .chip-check-ok{
-      background: #dcfce7;
-      color: #15803d;
-      border-color: #86efac;
-    }
-    .chip-check-bad{
-      background: #fee2e2;
-      color: #b91c1c;
-      border-color: #fca5a5;
-    }
-    .chip-check-wait{
-      background: #f3f4f6;
-      color: #4b5563;
-      border-color: #d1d5db;
-    }
+    .icon{ width:1.4rem; height:1.4rem; }
 
-    /* ปุ่มแอคชั่นใหญ่ชัด */
-    .btn-primary{
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      color: white;
-      font-weight: 700;
-      font-size: 1.15rem;
-      padding: 1rem 1.5rem;
-      border-radius: 12px;
-      border: none;
-      width: 100%;
-      cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    /* Bottom nav */
+    .tabbar{
+      position:sticky; bottom:0; inset-inline:0; z-index:40;
+      padding: .65rem .9rem; margin-top: 1rem;
+      background:rgba(255,255,255,.9); backdrop-filter: blur(8px);
+      border-top-left-radius: 18px; border-top-right-radius: 18px;
+      border:1px solid rgba(255,255,255,.8);
+      box-shadow: 0 -6px 20px rgba(124,58,237,.12);
     }
-    .btn-primary:active{
-      transform: translateY(2px);
-      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-    }
+    .tab-btn{ display:grid; place-items:center; gap:.25rem; font-size:.8rem; color:#6b7280; font-weight:700; }
+    .tab-btn[aria-current="page"]{ color:var(--vio-700); }
 
-    /* ปุ่มปรับฟอนต์ขนาดใหญ่ */
-    .font-btn{
-      width: 48px;
-      height: 48px;
-      background: white;
-      color: #2563eb;
-      border-radius: 12px;
-      border: 2px solid #93c5fd;
-      font-weight: 700;
-      font-size: 1.25rem;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .font-btn:active{
-      background: #dbeafe;
-      transform: scale(0.95);
-    }
-
-    /* อินพุตขนาดใหญ่อ่านง่าย */
-    .input-large{
-      width: 100%;
-      padding: 1.25rem;
-      border: 3px solid #cbd5e1;
-      border-radius: 12px;
-      font-size: 1.25rem;
-      font-weight: 600;
-      background: white;
-      transition: all 0.2s;
-    }
-    .input-large:focus{
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-    }
-
-    /* กริด responsive */
-    .cards-grid{
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 1rem;
-    }
-    @media (min-width: 640px){
-      .cards-grid{
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    /* ข้อความสำคัญ */
-    .text-xl{ font-size: 1.35rem; }
-    .text-2xl{ font-size: 1.65rem; }
-    .text-3xl{ font-size: 2rem; }
-
-    /* ลดแอนิเมชัน */
-    @media (prefers-reduced-motion: reduce){
-      * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
-
-    /* หมายเหตุแบบเน้น */
-    .note-box{
-      background: #fef2f2;
-      border: 2px solid #fca5a5;
-      border-radius: 12px;
-      padding: 1rem;
-      margin-top: 0.75rem;
-    }
-    .note-title{
-      color: #b91c1c;
-      font-weight: 700;
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
-    }
-    .note-content{
-      color: #991b1b;
-      font-size: 1rem;
-      line-height: 1.6;
-      white-space: pre-line;
-    }
-
-    /* Status row ที่ชัดเจน */
-    .status-row{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1rem;
-      background: #f8fafc;
-      border-radius: 10px;
-      border: 2px solid #e2e8f0;
-      gap: 1rem;
-    }
-    .status-label{
-      font-size: 1.1rem;
-      color: #475569;
-      font-weight: 600;
-      flex: 1;
-    }
-
-    /* ===== FAB โหลดข้อมูลใหม่ (ลอยมุมล่างขวา) ===== */
-    .fab-refresh{
-      position: fixed;
-      right: 1rem;
-      bottom: calc(1rem + env(safe-area-inset-bottom));
-      z-index: 60; /* สูงกว่า SweetAlert backdrop */
-    }
-    .fab-refresh__btn{
-      width: 64px; height: 64px; border: 0; cursor: pointer;
-      border-radius: 9999px; color: #fff;
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-      box-shadow: 0 10px 20px rgba(34,197,94,0.35), 0 4px 8px rgba(34,197,94,0.25);
-      display: grid; place-items: center;
-      transition: transform .15s ease, box-shadow .2s ease, opacity .2s ease;
-    }
-    .fab-refresh__btn:active{ transform: translateY(2px) scale(.98); }
-    .fab-refresh__btn[disabled]{ opacity: .7; cursor: not-allowed; }
-
-    @keyframes spin { from{transform: rotate(0)} to{transform: rotate(360deg)} }
+    /* Floating action */
+    .fab{ position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0)); z-index: 60; }
+    .fab-btn{ width:4.2em; height:4.2em; border:0; border-radius:999px; display:grid; place-items:center; color:#fff; cursor:pointer;
+      background: linear-gradient(135deg, var(--vio-600), var(--vio-700)); box-shadow: 0 12px 26px rgba(124,58,237,.35); }
+    .fab-btn:active{ transform: translateY(1px) scale(.98); }
     .spin { animation: spin 1s linear infinite; }
+    @keyframes spin{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+    /* Animations */
+    @media (prefers-reduced-motion:no-preference){
+      .fade-in{ animation: fade-in .45s ease both; }
+      .rise{ animation: rise .6s cubic-bezier(.2,.7,.2,1) both; }
+    }
+    @keyframes fade-in{ from{opacity:0} to{opacity:1} }
+    @keyframes rise{ from{opacity:0; transform: translateY(10px)} to{opacity:1; transform: translateY(0)} }
   </style>
 </head>
-<body class="p-4 safe-area">
-  <div class="w-full max-w-2xl mx-auto">
+<body class="safe-area">
+  <!-- Header -->
+  <header class="hero-wrap">
+    <div class="hero-bg"></div>
+    <div class="hero-wave"></div>
 
-    <!-- Header แบบ Flat -->
-    <header class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white text-2xl font-bold">
-          อ
-        </div>
+    <div class="px-5 pt-6 relative">
+      <div class="flex items-center justify-between text-white">
         <div>
-          <div class="text-2xl font-bold text-gray-800">อสม.โคกเจริญ</div>
-          <div class="text-sm text-gray-600">ระบบติดตามงาน</div>
+          <div class="text-sm opacity-90">Hi, <span id="hero-short">เพื่อน อสม.</span></div>
+          <h1 class="text-2xl font-extrabold leading-tight">อสม.โคกเจริญ</h1>
+          <p class="text-white/90 -mt-1">ระบบติดตามงาน</p>
         </div>
+        <img id="hero-avatar" class="w-12 h-12 rounded-2xl border-2 border-white object-cover" src="" alt="avatar"/>
       </div>
-      <!-- ปุ่มปรับฟอนต์ -->
-      <div class="flex items-center gap-2">
-        <button id="font-down" class="font-btn" aria-label="ลดขนาดตัวอักษร">A−</button>
-        <button id="font-up" class="font-btn" aria-label="เพิ่มขนาดตัวอักษร">A+</button>
-      </div>
-    </header>
 
-    <!-- Hero Card -->
-    <section class="card-flat mb-6">
-      <div class="card-header">
-        <div class="flex items-center gap-4">
-          <img id="hero-avatar" class="w-16 h-16 rounded-xl object-cover border-2 border-white" src="" alt="รูปโปรไฟล์">
+      <!-- Search / Month selector card -->
+      <div class="mt-5 glass-card p-4 text-slate-700 rise">
+        <div class="flex items-center justify-between">
           <div>
-            <div class="text-sm opacity-90">สวัสดี</div>
-            <div id="hero-name" class="text-2xl font-bold">-</div>
+            <div class="text-xs text-slate-500">บัตรประชาชน</div>
+            <div id="hero-cid" class="font-extrabold text-slate-800">-</div>
           </div>
+          <div>
+            <div class="text-xs text-slate-500">หมู่บ้าน</div>
+            <div id="hero-moo" class="font-extrabold text-slate-800">-</div>
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-2">
+          <select id="month-select" class="neo-in w-full p-3 rounded-xl bg-white/90">
+            <option value="">เลือกเดือน</option>
+          </select>
+          <button id="btn-search" class="w-full rounded-xl text-white font-extrabold shadow"
+            style="background:linear-gradient(135deg, var(--vio-500), var(--vio-700)); padding:.9rem 1rem;">แสดงผล</button>
         </div>
       </div>
-      
-      <div class="space-y-3">
-        <div class="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
-          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
-          </svg>
-          <div class="flex-1">
-            <div class="text-sm text-gray-600">เลขบัตรประชาชน</div>
-            <div id="hero-cid" class="text-xl font-bold text-gray-800 tracking-wider">-</div>
-          </div>
-        </div>
-        
-        <div class="flex items-center gap-3 p-3 bg-green-50 rounded-lg border-2 border-green-200">
-          <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-          </svg>
-          <div>
-            <div class="text-sm text-gray-600">หมู่บ้าน</div>
-            <div id="hero-moo" class="text-xl font-bold text-gray-800">-</div>
-          </div>
-        </div>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <main class="px-5 pb-24 -mt-3">
+    <section class="mb-3">
+      <h2 class="text-slate-800 text-lg font-extrabold mb-2">รายงานประจำเดือน</h2>
+      <div id="cards" class="grid gap-3">
+        <!-- filled by JS -->
       </div>
     </section>
 
-    <!-- การ์ดแยกเดือน -->
-    <section>
-      <div class="mb-4">
-        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-          </svg>
-          รายงานประจำเดือน
-        </h2>
-      </div>
-      <div id="cards" class="cards-grid"></div>
-    </section>
-
-    <!-- Register View -->
-    <section id="view-register" class="card-flat hidden">
-      <div class="card-header">
-        <div class="flex items-center gap-4">
-          <img id="reg-avatar" class="w-14 h-14 rounded-xl object-cover border-2 border-white" src="" alt="รูปโปรไฟล์">
-          <div>
-            <div class="text-sm opacity-90">ลงทะเบียนครั้งแรก</div>
-            <div id="reg-name" class="text-xl font-bold">-</div>
-          </div>
+    <!-- Register Panel -->
+    <section id="view-register" class="glass-card p-4 hidden">
+      <div class="flex items-center gap-3 mb-3">
+        <img id="reg-avatar" class="w-12 h-12 rounded-xl object-cover border-2 border-white" src="" alt="avatar"/>
+        <div>
+          <div class="text-xs text-slate-500">ลงทะเบียนครั้งแรก</div>
+          <div id="reg-name" class="text-base font-extrabold">-</div>
         </div>
       </div>
-      
-      <label class="block font-bold text-gray-700 mb-3 text-lg">
-        หมายเลขบัตรประชาชน (13 หลัก)
-      </label>
-      <input id="cid" inputmode="numeric" maxlength="13"
-             class="input-large"
-             placeholder="กรอกเลขบัตรประชาชน 13 หลัก">
-      <button id="btn-register" class="btn-primary mt-4">
-        ยืนยันลงทะเบียน
-      </button>
+      <label class="block font-bold text-slate-700 mb-2">หมายเลขบัตรประชาชน (13 หลัก)</label>
+      <input id="cid" inputmode="numeric" maxlength="13" class="w-full p-4 rounded-xl border-2 border-violet-200 focus:outline-none focus:border-violet-500" placeholder="กรอกเลขบัตร"/>
+      <button id="btn-register" class="mt-3 w-full rounded-xl text-white font-extrabold"
+        style="background:linear-gradient(135deg, var(--vio-500), var(--vio-700)); padding: .9rem 1rem;">ยืนยันลงทะเบียน</button>
     </section>
 
     <!-- Loader -->
-    <div id="loader" class="flex flex-col items-center justify-center mt-16">
-      <svg class="animate-spin h-12 w-12 text-blue-600 mb-4" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-      </svg>
-      <span class="text-xl text-gray-700 font-semibold">กำลังโหลด...</span>
+    <div id="loader" class="flex flex-col items-center justify-center py-14 text-violet-700">
+      <svg class="animate-spin h-10 w-10 mb-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+      <span class="font-bold">กำลังโหลด...</span>
     </div>
+  </main>
 
-  </div>
+  <!-- Bottom navigation -->
+  <nav class="tabbar grid grid-cols-4 gap-3">
+    <button class="tab-btn" aria-current="page">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2 7-7 7 7 2 2v8a2 2 0 01-2 2h-3a1 1 0 01-1-1v-4a1 1 0 00-1-1h-2a1 1 0 00-1 1v4a1 1 0 01-1 1H5a2 2 0 01-2-2z"/></svg>
+      <span>หน้าแรก</span>
+    </button>
+    <button class="tab-btn">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v11a2 2 0 002 2z"/></svg>
+      <span>รายเดือน</span>
+    </button>
+    <button class="tab-btn">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c-1.657 0-3 1.343-3 3v5h6v-5c0-1.657-1.343-3-3-3z"/><path d="M5 20h14"/></svg>
+      <span>แจ้งเตือน</span>
+    </button>
+    <button class="tab-btn">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      <span>โปรไฟล์</span>
+    </button>
+  </nav>
 
-  <!-- ===== Floating Refresh Button (FAB) ===== -->
-  <div class="fab-refresh" aria-live="polite">
-    <button id="btn-refresh" class="fab-refresh__btn" aria-label="โหลดข้อมูลใหม่">
-      <!-- Refresh icon -->
-      <svg id="icon-refresh" xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <!-- Floating Refresh -->
+  <div class="fab">
+    <button id="btn-refresh" class="fab-btn" aria-label="โหลดข้อมูลใหม่">
+      <svg id="icon-refresh" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6"/>
         <path stroke-linecap="round" stroke-linejoin="round" d="M20 9a8 8 0 10-3.86 7.14"/>
       </svg>
@@ -373,77 +194,15 @@
   const LIFF_ID  = '2008189191-jnqX2z8B';
   const API_BASE = 'https://script.google.com/macros/s/AKfycbzvrK6QIFKXXCdHj9KzKi4bBk5bHiHZVidfov2V3xmskZ8yZsnar8TNqEbyQHJ3inos/exec';
 
-  /* ===== Helpers ===== */
-  const $ = s => document.querySelector(s);
-  const show = el => $(el).classList.remove('hidden');
-  const hide = el => $(el).classList.add('hidden');
+  /* ===== Utils ===== */
+  const $ = (s)=>document.querySelector(s);
+  const show = (s)=>$(s).classList.remove('hidden');
+  const hide = (s)=>$(s).classList.add('hidden');
   const onlyDigit = s => String(s||'').replace(/[^\d]/g,'');
   const okCID = s => onlyDigit(s).length===13;
 
-  function tickIcon(on){
-    if(on){
-      return `<svg class="status-icon text-green-600" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-      </svg>`;
-    }
-    return `<svg class="status-icon text-gray-300" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-    </svg>`;
-  }
-
-  /* การ์ดเดือนแบบ Flat Design */
-  function cardTemplate(r){
-    const planTxt = r.planStatus || 'ยังไม่ได้ส่ง';
-    const planCls = r.tick ? 'chip-plan-ok' : 'chip-plan-warn';
-
-    // ตรวจสอบผลรายงาน
-    let chkTxt='รอตรวจสอบ', chkCls='chip-check-wait', noteHtml='';
-    const isBad = (r.reportState === 'bad') || /ไม่ผ่าน/.test(r.checkStatus || '');
-    
-    if (!isBad && r.reportState === 'ok'){
-      chkTxt='ถูกต้อง'; 
-      chkCls='chip-check-ok';
-    } else if (isBad){
-      chkTxt='ไม่ถูกต้อง'; 
-      chkCls='chip-check-bad';
-      
-      if (r.note && String(r.note).trim()){
-        const formattedNote = String(r.note)
-          .replace(/•/g, '\n•')
-          .replace(/^\n/, '')
-          .trim();
-        noteHtml = `
-          <div class="note-box">
-            <div class="note-title">📌 หมายเหตุที่ต้องแก้ไข:</div>
-            <div class="note-content">${formattedNote}</div>
-          </div>
-        `;
-      }
-    }
-
-    return `
-      <div class="card-flat">
-        <div class="month-badge mb-4">
-          ${tickIcon(r.tick)}
-          <span>${r.month}</span>
-        </div>
-        
-        <div class="space-y-3">
-          <div class="status-row">
-            <div class="status-label">📋 สถานะส่งแผน</div>
-            <span class="chip ${planCls}">${planTxt}</span>
-          </div>
-          
-          <div>
-            <div class="status-row">
-              <div class="status-label">📊 รายงาน อสม.1</div>
-              <span class="chip ${chkCls}">${chkTxt}</span>
-            </div>
-            ${noteHtml}
-          </div>
-        </div>
-      </div>
-    `;
+  function toastOK(t='อัปเดตข้อมูลล่าสุดแล้ว'){
+    Swal.fire({ toast:true, position:'bottom', icon:'success', title:t, timer:1600, showConfirmButton:false });
   }
 
   /* ===== API ===== */
@@ -453,237 +212,114 @@
     const res = await fetch(url.toString(), { method:'GET' });
     return res.json();
   }
-  
   async function apiPost(body){
-    const res = await fetch(API_BASE, {
-      method:'POST',
-      headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-      body: JSON.stringify(body)
-    });
+    const res = await fetch(API_BASE, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
     return res.json();
   }
 
-  /* ===== A11y Font Scale ===== */
-  const SCALE_KEY = 'osm_a11y_scale';
-  
-  function applyScale(v){
-    const val = Math.min(1.8, Math.max(1.0, v));
-    document.documentElement.style.setProperty('--a11y-scale', String(val));
-    localStorage.setItem(SCALE_KEY, String(val));
+  /* ===== Cards ===== */
+  function tickIcon(on){
+    if(on) return '<svg class="w-5 h-5 text-emerald-600" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>';
+    return '<svg class="w-5 h-5 text-slate-300" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>';
   }
-  
-  function loadScale(){
-    const saved = parseFloat(localStorage.getItem(SCALE_KEY) || '1.15');
-    applyScale(isNaN(saved) ? 1.15 : saved);
+
+  function cardTemplate(r){
+    const planTxt = r.planStatus || 'ยังไม่ได้ส่ง';
+    const planCls = r.tick ? 'chip-ok' : 'chip-warn';
+    let chkTxt='รอตรวจสอบ', chkCls='chip-wait', noteHtml='';
+    const isBad = (r.reportState === 'bad') || /ไม่ผ่าน/.test(r.checkStatus || '');
+    if (!isBad && r.reportState === 'ok'){ chkTxt='ถูกต้อง'; chkCls='chip-ok'; }
+    else if (isBad){ chkTxt='ไม่ถูกต้อง'; chkCls='chip-bad'; if (r.note && String(r.note).trim()){ noteHtml = `<div class='mt-2 text-sm text-rose-800 bg-rose-50 border border-rose-200 rounded-lg p-3'>📌 ${r.note}</div>`; } }
+
+    return `
+      <article class="glass-card p-4 fade-in">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            ${tickIcon(r.tick)}
+            <div class="font-extrabold text-slate-800">${r.month}</div>
+          </div>
+          <span class="chip ${planCls}">${planTxt}</span>
+        </div>
+        <div class="mt-3 flex items-center justify-between">
+          <div class="text-slate-600 font-bold">📊 รายงาน อสม.1</div>
+          <span class="chip ${chkCls}">${chkTxt}</span>
+        </div>
+        ${noteHtml}
+      </article>`;
   }
-  
-  $('#font-down')?.addEventListener('click', ()=>{
-    const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--a11y-scale')) || 1.15;
-    applyScale(cur - 0.1);
-  });
-  
-  $('#font-up')?.addEventListener('click', ()=>{
-    const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--a11y-scale')) || 1.15;
-    applyScale(cur + 0.1);
-  });
 
   /* ===== App Flow ===== */
   let liffProfile=null, userId='', boundCID='';
   let monthsCache=[];
+  const btnRefresh = $('#btn-refresh');
+  const iconRefresh = $('#icon-refresh');
+  let refreshing=false, lastRefreshAt=0;
+  function setRefreshBusy(b){ refreshing=b; btnRefresh.disabled=b; iconRefresh.classList.toggle('spin', b); }
 
-  function loading(title='กำลังประมวลผล'){
-    Swal.fire({
-      title, 
-      allowOutsideClick:false, 
-      allowEscapeKey:false,
-      customClass: {
-        title: 'text-xl font-bold'
-      },
-      didOpen:()=>Swal.showLoading()
-    });
+  async function renderHome(cid){
+    const st = await apiGet({ action:'status', cid });
+    if(!st.ok){ hide('#loader'); return Swal.fire({ icon:'error', title:'โหลดข้อมูลไม่สำเร็จ', text: st.error||'' }); }
+    monthsCache = st.months||[];
+    $('#hero-short').textContent = st.info?.linename?.split(' ')?.[0] || 'เพื่อน อสม.';
+    $('#hero-avatar').src = st.info?.linepic || liffProfile?.pictureUrl || '';
+    $('#hero-cid').textContent = cid; $('#hero-moo').textContent = st.info?.moo || '-';
+
+    // month select
+    const msel = $('#month-select');
+    msel.innerHTML = '<option value="">เลือกเดือน</option>' + monthsCache.map(m=>`<option>${m.month}</option>`).join('');
+
+    // cards
+    $('#cards').innerHTML = monthsCache.map(cardTemplate).join('');
+    hide('#loader');
   }
 
   async function main(){
     try{
-      loadScale();
-
       await liff.init({ liffId: LIFF_ID });
-      if (!liff.isLoggedIn()) liff.login();
-
-      const prof = await liff.getProfile();
-      liffProfile = prof; 
-      userId = prof.userId;
-
+      if(!liff.isLoggedIn()) liff.login();
+      const prof = await liff.getProfile(); liffProfile=prof; userId=prof.userId;
       const init = await apiGet({ action:'getorinit', uid:userId });
       if (!init.ok) throw new Error(init.error||'init error');
-
       if (init.registered){
         boundCID = init.profile.cid;
         $('#hero-avatar').src = init.profile.linepic || prof.pictureUrl || '';
-        $('#hero-name').textContent = init.profile.linename || prof.displayName || '-';
         await renderHome(boundCID);
-      }else{
-        hide('#loader');
-        show('#view-register');
-        $('#reg-avatar').src = prof.pictureUrl || '';
-        $('#reg-name').textContent = prof.displayName || '-';
+      } else {
+        hide('#loader'); show('#view-register');
+        $('#reg-avatar').src = prof.pictureUrl || ''; $('#reg-name').textContent = prof.displayName || '-';
       }
-    }catch(err){
-      hide('#loader'); 
-      Swal.fire({
-        title: 'เกิดข้อผิดพลาด',
-        text: err.message,
-        icon: 'error',
-        customClass: {
-          title: 'text-xl font-bold'
-        }
-      });
-    }
+    }catch(err){ hide('#loader'); Swal.fire({ icon:'error', title:'เกิดข้อผิดพลาด', text: err.message }); }
   }
 
-  async function renderHome(cid){
-    loading('กำลังโหลดข้อมูล...');
-    const st = await apiGet({ action:'status', cid });
-    Swal.close();
-
-    if (!st.ok){ 
-      Swal.fire({
-        title: 'โหลดข้อมูลไม่สำเร็จ',
-        text: st.error||'',
-        icon: 'error',
-        customClass: {
-          title: 'text-xl font-bold'
-        }
-      }); 
-      return; 
-    }
-
-    monthsCache = st.months || [];
-    $('#hero-name').textContent = st.info?.linename || liffProfile?.displayName || '-';
-    $('#hero-avatar').src = st.info?.linepic || liffProfile?.pictureUrl || '';
-    $('#hero-cid').textContent = cid;
-    $('#hero-moo').textContent = st.info?.moo || '-';
-
-    hide('#loader');
-    $('#cards').innerHTML = monthsCache.map(cardTemplate).join('');
-  }
-
-  /* ลงทะเบียนครั้งแรก */
+  // Register
   $('#btn-register')?.addEventListener('click', async ()=>{
     const cid = onlyDigit($('#cid').value);
-    if (!okCID(cid)){ 
-      Swal.fire({
-        title: 'ข้อมูลไม่ถูกต้อง',
-        text: 'กรุณากรอกเลขบัตร 13 หลัก',
-        icon: 'warning',
-        customClass: {
-          title: 'text-xl font-bold'
-        }
-      }); 
-      return; 
-    }
-    
-    loading('กำลังลงทะเบียน...');
-    const rs = await apiPost({
-      action:'register',
-      cid,
-      uid: userId,
-      linename: liffProfile?.displayName || '',
-      linepic:  liffProfile?.pictureUrl || ''
-    });
-    Swal.close();
-    
-    if (!rs.ok){ 
-      Swal.fire({
-        title: 'ลงทะเบียนไม่สำเร็จ',
-        text: rs.error||'',
-        icon: 'error',
-        customClass: {
-          title: 'text-xl font-bold'
-        }
-      }); 
-      return; 
-    }
-    
-    boundCID = cid;
-    Swal.fire({
-      title: 'สำเร็จ',
-      text: 'ลงทะเบียนเรียบร้อย',
-      icon: 'success',
-      customClass: {
-        title: 'text-xl font-bold'
-      }
-    });
+    if (!okCID(cid)) return Swal.fire({ icon:'warning', title:'ข้อมูลไม่ถูกต้อง', text:'กรุณากรอกเลขบัตร 13 หลัก' });
+    const rs = await apiPost({ action:'register', cid, uid:userId, linename:liffProfile?.displayName||'', linepic:liffProfile?.pictureUrl||'' });
+    if(!rs.ok) return Swal.fire({ icon:'error', title:'ลงทะเบียนไม่สำเร็จ', text: rs.error||'' });
+    boundCID=cid; Swal.fire({ icon:'success', title:'สำเร็จ', text:'ลงทะเบียนเรียบร้อย' });
     await renderHome(boundCID);
   });
 
-  /* ===== FAB Logic: โหลดข้อมูลใหม่ ===== */
-  const btnRefresh = document.getElementById('btn-refresh');
-  const iconRefresh = document.getElementById('icon-refresh');
-  let refreshing = false;
-  let lastRefreshAt = 0;
-
-  function setRefreshBusy(b){
-    refreshing = b;
-    if (!btnRefresh) return;
-    btnRefresh.disabled = b;
-    if (b){
-      iconRefresh.classList.add('spin');
-      iconRefresh.setAttribute('aria-hidden','true');
-    } else {
-      iconRefresh.classList.remove('spin');
-      iconRefresh.removeAttribute('aria-hidden');
-    }
-  }
-
-  async function refreshData(){
-    if (refreshing) return; // กันกดรัวๆ
-
-    // กันสแปม: อย่างน้อยห่าง 1.2 วินาที
-    const now = Date.now();
-    if (now - lastRefreshAt < 1200) return;
-    lastRefreshAt = now;
-
-    try{
-      setRefreshBusy(true);
-      if (boundCID){
-        await renderHome(boundCID);
-        // Toast ด้านล่างจอ แจ้งอัปเดตแล้ว
-        Swal.fire({
-          toast: true,
-          position: 'bottom',
-          icon: 'success',
-          title: 'อัปเดตข้อมูลล่าสุดแล้ว',
-          showConfirmButton: false,
-          timer: 1800,
-          customClass: { title: 'text-base font-bold' }
-        });
-      } else {
-        // ถ้ายังไม่ผูกบัตร ให้เรียก main() อีกรอบเพื่อ init flow
-        await main();
-      }
-    }catch(err){
-      Swal.fire({
-        icon: 'error',
-        title: 'รีเฟรชไม่สำเร็จ',
-        text: err.message,
-        customClass: { title: 'text-xl font-bold' }
-      });
-    }finally{
-      setRefreshBusy(false);
-    }
-  }
-
-  btnRefresh?.addEventListener('click', refreshData);
-
-  // รีเฟรชอัตโนมัติเมื่อกลับเข้าหน้า (เช่น จากสลับแอป)
-  document.addEventListener('visibilitychange', ()=>{
-    if (document.visibilityState === 'visible' && boundCID){
-      refreshData();
-    }
+  // Search by month (optional UX)
+  $('#btn-search')?.addEventListener('click', ()=>{
+    const val = $('#month-select').value;
+    if(!val){ $('#cards').innerHTML = monthsCache.map(cardTemplate).join(''); return; }
+    const pick = monthsCache.filter(m=>m.month===val);
+    $('#cards').innerHTML = (pick.length?pick:monthsCache).map(cardTemplate).join('');
   });
 
-  // เริ่มแอป
+  // FAB refresh
+  async function refreshData(){
+    if (refreshing) return; const now=Date.now(); if (now-lastRefreshAt<1200) return; lastRefreshAt=now;
+    try{ setRefreshBusy(true); boundCID ? (await renderHome(boundCID), toastOK()) : await main(); }
+    catch(err){ Swal.fire({ icon:'error', title:'รีเฟรชไม่สำเร็จ', text: err.message }); }
+    finally{ setRefreshBusy(false); }
+  }
+  btnRefresh?.addEventListener('click', refreshData);
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && boundCID){ refreshData(); } });
+
+  // Start
   main();
   </script>
 </body>
