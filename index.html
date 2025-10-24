@@ -1,202 +1,339 @@
 <!doctype html>
-<html lang="th" data-density="normal">
+<html lang="th">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
-  <title>อสม.โคกเจริญ — รายงาน</title>
+  <title>อสม.โคกเจริญ</title>
 
-  <!-- Libs -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <style>
-    /* ===== Typography & Fluid scales (anti-break when user zooms or enlarge fonts) ===== */
+    /* ฟอนต์ที่อ่านง่าย */
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap');
-    :root{
-      /* Base font-size scales fluidly with viewport, but remains friendly to OS font scaling */
-      --fs-0: clamp(0.95rem, 0.92rem + 0.30vw, 1.15rem);
-      --fs-1: clamp(1.05rem, 1.00rem + 0.45vw, 1.35rem);
-      --fs-2: clamp(1.25rem, 1.10rem + 0.80vw, 1.65rem);
-      --fs-3: clamp(1.45rem, 1.20rem + 1.10vw, 2.00rem);
-      --radius: 16px;
-      --radius-sm: 12px;
-      --elev: 0 6px 20px rgba(15, 23, 42, .08);
-      --elev-strong: 0 12px 32px rgba(15, 23, 42, .15);
-      --brand-1: #2563eb; /* indigo-600 */
-      --brand-2: #3b82f6; /* blue-500 */
-      --ok-1: #16a34a;   /* green-600 */
-      --warn-1:#b45309;  /* amber-700 */
-      --bad-1:#b91c1c;   /* red-700 */
-      --soft: #f8fafc;   /* slate-50 */
+    
+    body{
+      font-family: 'Sarabun', sans-serif;
+      background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+      min-height: 100vh;
     }
+    
+    .safe-area{ padding-bottom: env(safe-area-inset-bottom); }
 
+    /* ระบบขนาดฟอนต์ที่ใหญ่ขึ้น */
     html{
-      font-family: 'Sarabun', system-ui, -apple-system, 'Segoe UI', sans-serif;
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
-      background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
-      color: #0f172a;
+      --a11y-scale: 1.15; /* เริ่มต้นใหญ่กว่าเดิม 15% */
+      font-size: calc(17px * var(--a11y-scale));
     }
-    body{ min-height: 100svh; }
-    .safe-area{ padding-bottom: env(safe-area-inset-bottom, 0); }
 
-    /* ===== Modern motion, respects reduced-motion ===== */
-    @media (prefers-reduced-motion:no-preference){
-      .fade-in{ animation: fade-in .5s ease both; }
-      .slide-up{ animation: slide-up .6s cubic-bezier(.2,.7,.2,1) both; }
-      .pop{ transition: transform .12s ease, box-shadow .2s ease; }
-      .pop:active{ transform: translateY(1px) scale(.99); }
+    /* การ์ดแบบ Flat */
+    .card-flat{
+      background: white;
+      border-radius: 16px;
+      border: 2px solid #e2e8f0;
+      padding: 1.25rem;
+      transition: all 0.2s ease;
     }
-    @keyframes fade-in{ from{opacity:0} to{opacity:1} }
-    @keyframes slide-up{ from{opacity:0; transform: translateY(10px)} to{opacity:1; transform: translateY(0)} }
-    @keyframes spin { from{transform: rotate(0)} to{transform: rotate(360deg)} }
-    .spin{ animation: spin 1s linear infinite }
+    .card-flat:active{
+      transform: scale(0.98);
+      border-color: #cbd5e1;
+    }
 
-    /* ===== Layout cards with resilient grid (handles zoom/font growth) ===== */
+    /* Header การ์ด */
+    .card-header{
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+    }
+
+    /* เดือนแบบ Flat */
+    .month-badge{
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: #1e40af;
+      background: #dbeafe;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      border: 2px solid #93c5fd;
+    }
+
+    /* ไอคอนสถานะใหญ่ชัดเจน */
+    .status-icon{
+      width: 2rem;
+      height: 2rem;
+      flex-shrink: 0;
+    }
+
+    /* ชิปสถานะแบบ Flat ขนาดใหญ่ */
+    .chip{
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      border: 2px solid;
+      min-width: 140px;
+      justify-content: center;
+    }
+    .chip-plan-ok{
+      background: #dcfce7;
+      color: #15803d;
+      border-color: #86efac;
+    }
+    .chip-plan-warn{
+      background: #fef3c7;
+      color: #b45309;
+      border-color: #fcd34d;
+    }
+    .chip-check-ok{
+      background: #dcfce7;
+      color: #15803d;
+      border-color: #86efac;
+    }
+    .chip-check-bad{
+      background: #fee2e2;
+      color: #b91c1c;
+      border-color: #fca5a5;
+    }
+    .chip-check-wait{
+      background: #f3f4f6;
+      color: #4b5563;
+      border-color: #d1d5db;
+    }
+
+    /* ปุ่มแอคชั่นใหญ่ชัด */
+    .btn-primary{
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      font-weight: 700;
+      font-size: 1.15rem;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      border: none;
+      width: 100%;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    .btn-primary:active{
+      transform: translateY(2px);
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+
+    /* ปุ่มปรับฟอนต์ขนาดใหญ่ */
+    .font-btn{
+      width: 48px;
+      height: 48px;
+      background: white;
+      color: #2563eb;
+      border-radius: 12px;
+      border: 2px solid #93c5fd;
+      font-weight: 700;
+      font-size: 1.25rem;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .font-btn:active{
+      background: #dbeafe;
+      transform: scale(0.95);
+    }
+
+    /* อินพุตขนาดใหญ่อ่านง่าย */
+    .input-large{
+      width: 100%;
+      padding: 1.25rem;
+      border: 3px solid #cbd5e1;
+      border-radius: 12px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      background: white;
+      transition: all 0.2s;
+    }
+    .input-large:focus{
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+
+    /* กริด responsive */
     .cards-grid{
       display: grid;
+      grid-template-columns: 1fr;
       gap: 1rem;
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    }
+    @media (min-width: 640px){
+      .cards-grid{
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
-    /* Density modes (auto toggled by ResizeObserver below) */
-    [data-density="spacious"] .cards-grid{ gap: 1.25rem; }
+    /* ข้อความสำคัญ */
+    .text-xl{ font-size: 1.35rem; }
+    .text-2xl{ font-size: 1.65rem; }
+    .text-3xl{ font-size: 2rem; }
 
-    /* ===== Cards ===== */
-    .card{
-      background: #fff;
+    /* ลดแอนิเมชัน */
+    @media (prefers-reduced-motion: reduce){
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* หมายเหตุแบบเน้น */
+    .note-box{
+      background: #fef2f2;
+      border: 2px solid #fca5a5;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-top: 0.75rem;
+    }
+    .note-title{
+      color: #b91c1c;
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+    .note-content{
+      color: #991b1b;
+      font-size: 1rem;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    /* Status row ที่ชัดเจน */
+    .status-row{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      background: #f8fafc;
+      border-radius: 10px;
       border: 2px solid #e2e8f0;
-      border-radius: var(--radius);
-      box-shadow: var(--elev);
-      padding: 1.0rem;
+      gap: 1rem;
     }
-    .card-head{
-      border-radius: var(--radius-sm);
-      background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-      color: #fff;
-      padding: .9rem 1rem;
-      margin:-.25rem -.25rem 1rem;
+    .status-label{
+      font-size: 1.1rem;
+      color: #475569;
+      font-weight: 600;
+      flex: 1;
     }
-
-    .badge-month{ display:inline-flex; align-items:center; gap:.7em; padding:.6em .9em; border-radius:12px; border:2px solid #93c5fd; background:#dbeafe; font-weight:800; font-size:var(--fs-1); color:#1e40af; }
-    .status-row{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding: .85rem; background:#f8fafc; border:2px solid #e2e8f0; border-radius:12px; }
-    .status-label{ font-size:var(--fs-0); color:#475569; font-weight:700; }
-    .chip{ display:inline-flex; align-items:center; justify-content:center; gap:.55em; padding:.65em 1em; border-radius:12px; border:2px solid; font-weight:800; font-size:var(--fs-0); min-width:10ch; text-align:center; }
-    .chip-ok{ background:#dcfce7; color:#15803d; border-color:#86efac; }
-    .chip-warn{ background:#fef3c7; color:#b45309; border-color:#fcd34d; }
-    .chip-bad{ background:#fee2e2; color:#b91c1c; border-color:#fca5a5; }
-    .chip-wait{ background:#f3f4f6; color:#4b5563; border-color:#d1d5db; }
-
-    .note-box{ background:#fef2f2; border:2px solid #fecaca; border-radius:12px; padding:.8rem; margin-top:.6rem; }
-    .note-title{ color:var(--bad-1); font-weight:800; font-size:var(--fs-0); margin-bottom:.25rem; }
-    .note-content{ color:#7f1d1d; font-size:calc(var(--fs-0)*.95); line-height:1.6; white-space:pre-line; }
-
-    /* ===== Header & Controls ===== */
-    .font-btn{ width: 2.8rem; height: 2.8rem; background:#fff; color:var(--brand-1); border-radius:12px; border:2px solid #93c5fd; font-weight:800; font-size:var(--fs-1); display:grid; place-items:center; }
-
-    /* ===== Floating Refresh (sized in em, scales with zoom/font) ===== */
-    .fab{ position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0)); z-index: 60; }
-    .fab-btn{ width: 4.2em; height: 4.2em; border:0; border-radius:9999px; display:grid; place-items:center; color:#fff; cursor:pointer; background:linear-gradient(135deg, #22c55e, #16a34a); box-shadow: 0 10px 20px rgba(34,197,94,.35), 0 4px 8px rgba(34,197,94,.25); }
-    .fab-btn:active{ transform: translateY(1px) scale(.98); }
-    .fab-btn[disabled]{ opacity:.7; cursor:not-allowed; }
-    .icon{ width: 1.6em; height: 1.6em; }
-
-    /* ===== Avatar keeps shape even on zoom ===== */
-    .avatar{ inline-size: 4.2rem; block-size: 4.2rem; border-radius: 14px; object-fit: cover; border: 2px solid #fff; }
-
-    /* ===== Utilities ===== */
-    .sr{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
   </style>
 </head>
-<body class="p-4 safe-area fade-in">
-  <main class="w-full max-w-3xl mx-auto">
-    <!-- Header -->
-    <header class="flex items-center justify-between mb-6 slide-up">
+<body class="p-4 safe-area">
+  <div class="w-full max-w-2xl mx-auto">
+
+    <!-- Header แบบ Flat -->
+    <header class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-xl grid place-items-center text-white text-2xl font-extrabold shadow" style="background:linear-gradient(135deg,#22d3ee,#0ea5e9)">อ</div>
+        <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white text-2xl font-bold">
+          อ
+        </div>
         <div>
-          <div class="font-extrabold" style="font-size:var(--fs-2)">อสม.โคกเจริญ</div>
-          <div class="text-slate-600" style="font-size:calc(var(--fs-0)*.9)">ระบบติดตามงาน</div>
+          <div class="text-2xl font-bold text-gray-800">อสม.โคกเจริญ</div>
+          <div class="text-sm text-gray-600">ระบบติดตามงาน</div>
         </div>
       </div>
+      <!-- ปุ่มปรับฟอนต์ -->
       <div class="flex items-center gap-2">
-        <button id="font-down" class="font-btn pop" aria-label="ลดขนาดตัวอักษร">A−</button>
-        <button id="font-up"   class="font-btn pop" aria-label="เพิ่มขนาดตัวอักษร">A+</button>
+        <button id="font-down" class="font-btn" aria-label="ลดขนาดตัวอักษร">A−</button>
+        <button id="font-up" class="font-btn" aria-label="เพิ่มขนาดตัวอักษร">A+</button>
       </div>
     </header>
 
-    <!-- Hero -->
-    <section class="card slide-up" style="--i:1">
-      <div class="card-head">
+    <!-- Hero Card -->
+    <section class="card-flat mb-6">
+      <div class="card-header">
         <div class="flex items-center gap-4">
-          <img id="hero-avatar" class="avatar" src="" alt="รูปโปรไฟล์">
+          <img id="hero-avatar" class="w-16 h-16 rounded-xl object-cover border-2 border-white" src="" alt="รูปโปรไฟล์">
           <div>
-            <div class="opacity-90" style="font-size:calc(var(--fs-0)*.9)">สวัสดี</div>
-            <div id="hero-name" class="font-extrabold" style="font-size:var(--fs-2)">-</div>
+            <div class="text-sm opacity-90">สวัสดี</div>
+            <div id="hero-name" class="text-2xl font-bold">-</div>
           </div>
         </div>
       </div>
-
+      
       <div class="space-y-3">
         <div class="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
-          <svg class="icon text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>
+          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+          </svg>
           <div class="flex-1">
-            <div class="text-slate-600" style="font-size:calc(var(--fs-0)*.9)">เลขบัตรประชาชน</div>
-            <div id="hero-cid" class="font-extrabold tracking-wider" style="font-size:var(--fs-1)">-</div>
+            <div class="text-sm text-gray-600">เลขบัตรประชาชน</div>
+            <div id="hero-cid" class="text-xl font-bold text-gray-800 tracking-wider">-</div>
           </div>
         </div>
+        
         <div class="flex items-center gap-3 p-3 bg-green-50 rounded-lg border-2 border-green-200">
-          <svg class="icon text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          </svg>
           <div>
-            <div class="text-slate-600" style="font-size:calc(var(--fs-0)*.9)">หมู่บ้าน</div>
-            <div id="hero-moo" class="font-extrabold" style="font-size:var(--fs-1)">-</div>
+            <div class="text-sm text-gray-600">หมู่บ้าน</div>
+            <div id="hero-moo" class="text-xl font-bold text-gray-800">-</div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- รายงานประจำเดือน -->
-    <section class="mt-6 slide-up" style="--i:2">
-      <h2 class="font-extrabold mb-3 flex items-center gap-2" style="font-size:var(--fs-2)">
-        <svg class="icon text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        รายงานประจำเดือน
-      </h2>
+    <!-- การ์ดแยกเดือน -->
+    <section>
+      <div class="mb-4">
+        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          รายงานประจำเดือน
+        </h2>
+      </div>
       <div id="cards" class="cards-grid"></div>
     </section>
 
-    <!-- ลงทะเบียน -->
-    <section id="view-register" class="card hidden slide-up" style="--i:3">
-      <div class="card-head">
+    <!-- Register View -->
+    <section id="view-register" class="card-flat hidden">
+      <div class="card-header">
         <div class="flex items-center gap-4">
-          <img id="reg-avatar" class="avatar" src="" alt="รูปโปรไฟล์">
+          <img id="reg-avatar" class="w-14 h-14 rounded-xl object-cover border-2 border-white" src="" alt="รูปโปรไฟล์">
           <div>
-            <div class="opacity-90" style="font-size:calc(var(--fs-0)*.9)">ลงทะเบียนครั้งแรก</div>
-            <div id="reg-name" class="font-extrabold" style="font-size:var(--fs-1)">-</div>
+            <div class="text-sm opacity-90">ลงทะเบียนครั้งแรก</div>
+            <div id="reg-name" class="text-xl font-bold">-</div>
           </div>
         </div>
       </div>
-      <label class="block font-extrabold text-slate-700 mb-3" style="font-size:var(--fs-1)">หมายเลขบัตรประชาชน (13 หลัก)</label>
-      <input id="cid" inputmode="numeric" maxlength="13" class="w-full p-4 border-[3px] border-slate-300 rounded-xl text-slate-800 font-bold focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" style="font-size:var(--fs-1)" placeholder="กรอกเลขบัตรประชาชน 13 หลัก">
-      <button id="btn-register" class="mt-4 w-full rounded-xl text-white font-extrabold shadow pop" style="font-size:var(--fs-1); padding:1rem 1.25rem; background:linear-gradient(135deg,#3b82f6,#2563eb)">ยืนยันลงทะเบียน</button>
+      
+      <label class="block font-bold text-gray-700 mb-3 text-lg">
+        หมายเลขบัตรประชาชน (13 หลัก)
+      </label>
+      <input id="cid" inputmode="numeric" maxlength="13"
+             class="input-large"
+             placeholder="กรอกเลขบัตรประชาชน 13 หลัก">
+      <button id="btn-register" class="btn-primary mt-4">
+        ยืนยันลงทะเบียน
+      </button>
     </section>
 
     <!-- Loader -->
     <div id="loader" class="flex flex-col items-center justify-center mt-16">
-      <svg class="animate-spin h-12 w-12 text-blue-600 mb-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
-      <span class="font-semibold text-slate-700" style="font-size:var(--fs-1)">กำลังโหลด...</span>
-    </div>
-  </main>
-
-  <!-- Floating Refresh -->
-  <div class="fab" aria-live="polite">
-    <button id="btn-refresh" class="fab-btn pop" aria-label="โหลดข้อมูลใหม่">
-      <svg id="icon-refresh" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6"/>
-        <path stroke-linecap="round" stroke-linejoin="round" d="M20 9a8 8 0 10-3.86 7.14"/>
+      <svg class="animate-spin h-12 w-12 text-blue-600 mb-4" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
       </svg>
-      <span class="sr">โหลดข้อมูลใหม่</span>
-    </button>
+      <span class="text-xl text-gray-700 font-semibold">กำลังโหลด...</span>
+    </div>
+
   </div>
 
   <script>
@@ -213,38 +350,68 @@
 
   function tickIcon(on){
     if(on){
-      return `<svg class="icon text-green-600" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`;
+      return `<svg class="status-icon text-green-600" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+      </svg>`;
     }
-    return `<svg class="icon text-gray-300" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>`;
+    return `<svg class="status-icon text-gray-300" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+    </svg>`;
   }
 
-  /* Card template (resilient to zoom) */
+  /* การ์ดเดือนแบบ Flat Design */
   function cardTemplate(r){
     const planTxt = r.planStatus || 'ยังไม่ได้ส่ง';
-    const planCls = r.tick ? 'chip-ok' : 'chip-warn';
+    const planCls = r.tick ? 'chip-plan-ok' : 'chip-plan-warn';
 
-    let chkTxt='รอตรวจสอบ', chkCls='chip-wait', noteHtml='';
+    // ตรวจสอบผลรายงาน
+    let chkTxt='รอตรวจสอบ', chkCls='chip-check-wait', noteHtml='';
     const isBad = (r.reportState === 'bad') || /ไม่ผ่าน/.test(r.checkStatus || '');
-    if (!isBad && r.reportState === 'ok'){ chkTxt='ถูกต้อง'; chkCls='chip-ok'; }
-    else if (isBad){
-      chkTxt='ไม่ถูกต้อง'; chkCls='chip-bad';
+    
+    if (!isBad && r.reportState === 'ok'){
+      chkTxt='ถูกต้อง'; 
+      chkCls='chip-check-ok';
+    } else if (isBad){
+      chkTxt='ไม่ถูกต้อง'; 
+      chkCls='chip-check-bad';
+      
       if (r.note && String(r.note).trim()){
-        const formatted = String(r.note).replace(/•/g, '\n•').replace(/^\n/, '').trim();
-        noteHtml = `<div class="note-box"><div class="note-title">📌 หมายเหตุที่ต้องแก้ไข:</div><div class="note-content">${formatted}</div></div>`;
+        const formattedNote = String(r.note)
+          .replace(/•/g, '\n•')
+          .replace(/^\n/, '')
+          .trim();
+        noteHtml = `
+          <div class="note-box">
+            <div class="note-title">📌 หมายเหตุที่ต้องแก้ไข:</div>
+            <div class="note-content">${formattedNote}</div>
+          </div>
+        `;
       }
     }
 
     return `
-      <article class="card slide-up">
-        <div class="badge-month mb-3">${tickIcon(r.tick)}<span>${r.month}</span></div>
+      <div class="card-flat">
+        <div class="month-badge mb-4">
+          ${tickIcon(r.tick)}
+          <span>${r.month}</span>
+        </div>
+        
         <div class="space-y-3">
-          <div class="status-row"><div class="status-label">📋 สถานะส่งแผน</div><span class="chip ${planCls}">${planTxt}</span></div>
+          <div class="status-row">
+            <div class="status-label">📋 สถานะส่งแผน</div>
+            <span class="chip ${planCls}">${planTxt}</span>
+          </div>
+          
           <div>
-            <div class="status-row"><div class="status-label">📊 รายงาน อสม.1</div><span class="chip ${chkCls}">${chkTxt}</span></div>
+            <div class="status-row">
+              <div class="status-label">📊 รายงาน อสม.1</div>
+              <span class="chip ${chkCls}">${chkTxt}</span>
+            </div>
             ${noteHtml}
           </div>
         </div>
-      </article>`;
+      </div>
+    `;
   }
 
   /* ===== API ===== */
@@ -254,40 +421,67 @@
     const res = await fetch(url.toString(), { method:'GET' });
     return res.json();
   }
+  
   async function apiPost(body){
-    const res = await fetch(API_BASE, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+    const res = await fetch(API_BASE, {
+      method:'POST',
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify(body)
+    });
     return res.json();
   }
 
-  /* ===== A11y font scale (manual controls) ===== */
-  const SCALE_KEY = 'osm_a11y_scale_v2';
-  function applyScale(val){ document.documentElement.style.fontSize = `calc(16px * ${val})`; localStorage.setItem(SCALE_KEY, String(val)); }
-  function loadScale(){ const v = parseFloat(localStorage.getItem(SCALE_KEY) || '1'); applyScale(isNaN(v)?1:v); }
-  $('#font-down')?.addEventListener('click', ()=>{ const cur = parseFloat(localStorage.getItem(SCALE_KEY) || '1'); applyScale(Math.max(.85, cur - .05)); });
-  $('#font-up')?.addEventListener('click', ()=>{ const cur = parseFloat(localStorage.getItem(SCALE_KEY) || '1'); applyScale(Math.min(1.6, cur + .05)); });
-
-  /* ===== Density auto (responds to zoom / very large fonts) ===== */
-  const ro = new ResizeObserver(()=>{
-    const r = document.documentElement.getBoundingClientRect();
-    // ch per viewport width proxy: if few characters fit per line -> we are zoomed/large fonts
-    const chWidth = parseFloat(getComputedStyle(document.documentElement).fontSize); // px of 1rem
-    const charsPerLine = r.width / chWidth; // approx
-    document.documentElement.dataset.density = (charsPerLine < 30) ? 'spacious' : 'normal';
+  /* ===== A11y Font Scale ===== */
+  const SCALE_KEY = 'osm_a11y_scale';
+  
+  function applyScale(v){
+    const val = Math.min(1.8, Math.max(1.0, v));
+    document.documentElement.style.setProperty('--a11y-scale', String(val));
+    localStorage.setItem(SCALE_KEY, String(val));
+  }
+  
+  function loadScale(){
+    const saved = parseFloat(localStorage.getItem(SCALE_KEY) || '1.15');
+    applyScale(isNaN(saved) ? 1.15 : saved);
+  }
+  
+  $('#font-down')?.addEventListener('click', ()=>{
+    const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--a11y-scale')) || 1.15;
+    applyScale(cur - 0.1);
   });
-  ro.observe(document.documentElement);
+  
+  $('#font-up')?.addEventListener('click', ()=>{
+    const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--a11y-scale')) || 1.15;
+    applyScale(cur + 0.1);
+  });
 
   /* ===== App Flow ===== */
   let liffProfile=null, userId='', boundCID='';
   let monthsCache=[];
-  function toastOk(t='อัปเดตข้อมูลล่าสุดแล้ว'){ Swal.fire({ toast:true, position:'bottom', icon:'success', title:t, showConfirmButton:false, timer:1800, customClass:{ title:'text-base font-bold' } }); }
-  function loading(title='กำลังประมวลผล'){ Swal.fire({ title, allowOutsideClick:false, allowEscapeKey:false, didOpen:()=>Swal.showLoading() }); }
+
+  function loading(title='กำลังประมวลผล'){
+    Swal.fire({
+      title, 
+      allowOutsideClick:false, 
+      allowEscapeKey:false,
+      customClass: {
+        title: 'text-xl font-bold'
+      },
+      didOpen:()=>Swal.showLoading()
+    });
+  }
 
   async function main(){
     try{
       loadScale();
+
       await liff.init({ liffId: LIFF_ID });
       if (!liff.isLoggedIn()) liff.login();
-      const prof = await liff.getProfile(); liffProfile = prof; userId = prof.userId;
+
+      const prof = await liff.getProfile();
+      liffProfile = prof; 
+      userId = prof.userId;
+
       const init = await apiGet({ action:'getorinit', uid:userId });
       if (!init.ok) throw new Error(init.error||'init error');
 
@@ -297,17 +491,40 @@
         $('#hero-name').textContent = init.profile.linename || prof.displayName || '-';
         await renderHome(boundCID);
       }else{
-        hide('#loader'); show('#view-register');
-        $('#reg-avatar').src = prof.pictureUrl || ''; $('#reg-name').textContent = prof.displayName || '-';
+        hide('#loader');
+        show('#view-register');
+        $('#reg-avatar').src = prof.pictureUrl || '';
+        $('#reg-name').textContent = prof.displayName || '-';
       }
-    }catch(err){ hide('#loader'); Swal.fire({ title:'เกิดข้อผิดพลาด', text: err.message, icon:'error' }); }
+    }catch(err){
+      hide('#loader'); 
+      Swal.fire({
+        title: 'เกิดข้อผิดพลาด',
+        text: err.message,
+        icon: 'error',
+        customClass: {
+          title: 'text-xl font-bold'
+        }
+      });
+    }
   }
 
   async function renderHome(cid){
     loading('กำลังโหลดข้อมูล...');
     const st = await apiGet({ action:'status', cid });
     Swal.close();
-    if (!st.ok){ return Swal.fire({ title:'โหลดข้อมูลไม่สำเร็จ', text: st.error||'', icon:'error' }); }
+
+    if (!st.ok){ 
+      Swal.fire({
+        title: 'โหลดข้อมูลไม่สำเร็จ',
+        text: st.error||'',
+        icon: 'error',
+        customClass: {
+          title: 'text-xl font-bold'
+        }
+      }); 
+      return; 
+    }
 
     monthsCache = st.months || [];
     $('#hero-name').textContent = st.info?.linename || liffProfile?.displayName || '-';
@@ -316,39 +533,58 @@
     $('#hero-moo').textContent = st.info?.moo || '-';
 
     hide('#loader');
-    const cards = monthsCache.map(cardTemplate).join('');
-    // Mount with small transition
-    const el = document.getElementById('cards');
-    el.innerHTML = cards;
+    $('#cards').innerHTML = monthsCache.map(cardTemplate).join('');
   }
 
-  // Register
+  /* ลงทะเบียนครั้งแรก */
   $('#btn-register')?.addEventListener('click', async ()=>{
     const cid = onlyDigit($('#cid').value);
-    if (!okCID(cid)) return Swal.fire({ title:'ข้อมูลไม่ถูกต้อง', text:'กรุณากรอกเลขบัตร 13 หลัก', icon:'warning' });
+    if (!okCID(cid)){ 
+      Swal.fire({
+        title: 'ข้อมูลไม่ถูกต้อง',
+        text: 'กรุณากรอกเลขบัตร 13 หลัก',
+        icon: 'warning',
+        customClass: {
+          title: 'text-xl font-bold'
+        }
+      }); 
+      return; 
+    }
+    
     loading('กำลังลงทะเบียน...');
-    const rs = await apiPost({ action:'register', cid, uid: userId, linename: liffProfile?.displayName || '', linepic:  liffProfile?.pictureUrl || '' });
+    const rs = await apiPost({
+      action:'register',
+      cid,
+      uid: userId,
+      linename: liffProfile?.displayName || '',
+      linepic:  liffProfile?.pictureUrl || ''
+    });
     Swal.close();
-    if (!rs.ok) return Swal.fire({ title:'ลงทะเบียนไม่สำเร็จ', text: rs.error||'', icon:'error' });
-    boundCID = cid; Swal.fire({ title:'สำเร็จ', text:'ลงทะเบียนเรียบร้อย', icon:'success' });
+    
+    if (!rs.ok){ 
+      Swal.fire({
+        title: 'ลงทะเบียนไม่สำเร็จ',
+        text: rs.error||'',
+        icon: 'error',
+        customClass: {
+          title: 'text-xl font-bold'
+        }
+      }); 
+      return; 
+    }
+    
+    boundCID = cid;
+    Swal.fire({
+      title: 'สำเร็จ',
+      text: 'ลงทะเบียนเรียบร้อย',
+      icon: 'success',
+      customClass: {
+        title: 'text-xl font-bold'
+      }
+    });
     await renderHome(boundCID);
   });
 
-  // FAB refresh
-  const btnRefresh = document.getElementById('btn-refresh');
-  const iconRefresh = document.getElementById('icon-refresh');
-  let refreshing = false, lastRefreshAt = 0;
-  function setRefreshBusy(b){ refreshing=b; btnRefresh.disabled=b; iconRefresh.classList.toggle('spin', b); }
-  async function refreshData(){
-    if (refreshing) return; const now = Date.now(); if (now - lastRefreshAt < 1200) return; lastRefreshAt = now;
-    try{ setRefreshBusy(true); boundCID ? (await renderHome(boundCID), toastOk()) : await main(); }
-    catch(err){ Swal.fire({ icon:'error', title:'รีเฟรชไม่สำเร็จ', text: err.message }); }
-    finally{ setRefreshBusy(false); }
-  }
-  btnRefresh?.addEventListener('click', refreshData);
-  document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible' && boundCID){ refreshData(); } });
-
-  // Start
   main();
   </script>
 </body>
