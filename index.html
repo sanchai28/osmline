@@ -231,6 +231,27 @@
       font-weight: 600;
       flex: 1;
     }
+
+    /* ===== FAB โหลดข้อมูลใหม่ (ลอยมุมล่างขวา) ===== */
+    .fab-refresh{
+      position: fixed;
+      right: 1rem;
+      bottom: calc(1rem + env(safe-area-inset-bottom));
+      z-index: 60; /* สูงกว่า SweetAlert backdrop */
+    }
+    .fab-refresh__btn{
+      width: 64px; height: 64px; border: 0; cursor: pointer;
+      border-radius: 9999px; color: #fff;
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      box-shadow: 0 10px 20px rgba(34,197,94,0.35), 0 4px 8px rgba(34,197,94,0.25);
+      display: grid; place-items: center;
+      transition: transform .15s ease, box-shadow .2s ease, opacity .2s ease;
+    }
+    .fab-refresh__btn:active{ transform: translateY(2px) scale(.98); }
+    .fab-refresh__btn[disabled]{ opacity: .7; cursor: not-allowed; }
+
+    @keyframes spin { from{transform: rotate(0)} to{transform: rotate(360deg)} }
+    .spin { animation: spin 1s linear infinite; }
   </style>
 </head>
 <body class="p-4 safe-area">
@@ -334,6 +355,17 @@
       <span class="text-xl text-gray-700 font-semibold">กำลังโหลด...</span>
     </div>
 
+  </div>
+
+  <!-- ===== Floating Refresh Button (FAB) ===== -->
+  <div class="fab-refresh" aria-live="polite">
+    <button id="btn-refresh" class="fab-refresh__btn" aria-label="โหลดข้อมูลใหม่">
+      <!-- Refresh icon -->
+      <svg id="icon-refresh" xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M20 9a8 8 0 10-3.86 7.14"/>
+      </svg>
+    </button>
   </div>
 
   <script>
@@ -585,6 +617,73 @@
     await renderHome(boundCID);
   });
 
+  /* ===== FAB Logic: โหลดข้อมูลใหม่ ===== */
+  const btnRefresh = document.getElementById('btn-refresh');
+  const iconRefresh = document.getElementById('icon-refresh');
+  let refreshing = false;
+  let lastRefreshAt = 0;
+
+  function setRefreshBusy(b){
+    refreshing = b;
+    if (!btnRefresh) return;
+    btnRefresh.disabled = b;
+    if (b){
+      iconRefresh.classList.add('spin');
+      iconRefresh.setAttribute('aria-hidden','true');
+    } else {
+      iconRefresh.classList.remove('spin');
+      iconRefresh.removeAttribute('aria-hidden');
+    }
+  }
+
+  async function refreshData(){
+    if (refreshing) return; // กันกดรัวๆ
+
+    // กันสแปม: อย่างน้อยห่าง 1.2 วินาที
+    const now = Date.now();
+    if (now - lastRefreshAt < 1200) return;
+    lastRefreshAt = now;
+
+    try{
+      setRefreshBusy(true);
+      if (boundCID){
+        await renderHome(boundCID);
+        // Toast ด้านล่างจอ แจ้งอัปเดตแล้ว
+        Swal.fire({
+          toast: true,
+          position: 'bottom',
+          icon: 'success',
+          title: 'อัปเดตข้อมูลล่าสุดแล้ว',
+          showConfirmButton: false,
+          timer: 1800,
+          customClass: { title: 'text-base font-bold' }
+        });
+      } else {
+        // ถ้ายังไม่ผูกบัตร ให้เรียก main() อีกรอบเพื่อ init flow
+        await main();
+      }
+    }catch(err){
+      Swal.fire({
+        icon: 'error',
+        title: 'รีเฟรชไม่สำเร็จ',
+        text: err.message,
+        customClass: { title: 'text-xl font-bold' }
+      });
+    }finally{
+      setRefreshBusy(false);
+    }
+  }
+
+  btnRefresh?.addEventListener('click', refreshData);
+
+  // รีเฟรชอัตโนมัติเมื่อกลับเข้าหน้า (เช่น จากสลับแอป)
+  document.addEventListener('visibilitychange', ()=>{
+    if (document.visibilityState === 'visible' && boundCID){
+      refreshData();
+    }
+  });
+
+  // เริ่มแอป
   main();
   </script>
 </body>
