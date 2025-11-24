@@ -76,7 +76,7 @@
 
 <script>
 /* ===== Config ===== */
-const API_BASE = 'https://script.google.com/macros/s/AKfycbx0hTIeuQwVgZO7EEq57nXZxGakCxn-b3wRx5L4RzoOkgHTlkyoRMsSoWQIqHzfy4Pb/exec'; // <- ตรวจสอบ URL อีกครั้งหากมีการเปลี่ยนแปลง
+const API_BASE = 'https://script.google.com/macros/s/AKfycbx0hTIeuQwVgZO7EEq57nXZxGakCxn-b3wRx5L4RzoOkgHTlkyoRMsSoWQIqHzfy4Pb/exec'; 
 const METRICS = [
   '1.1','1.1.1','1.1.2','1.2','1.2.1','1.2.2',
   '1.3','1.3.1','1.3.2','1.3.3','1.4',
@@ -321,12 +321,10 @@ function renderSummary(rows) {
     } else if (r.status === 'ยังไม่ส่งรายงานผลการปฏิบัติงาน') {
       grp[m].wait++;
     } else {
-      // แผนไม่ถูกต้อง หรือ ไม่ผ่านข้อ
       grp[m].fail++;
     }
   });
 
-  // Sort keys by Moo number
   const keys = Object.keys(grp).sort((a, b) => mooNum(a) - mooNum(b));
   
   let h = `
@@ -338,7 +336,7 @@ function renderSummary(rows) {
         <th class="text-center bg-blue-50 border-l text-blue-800">ส่งแล้ว</th>
         <th class="text-center bg-green-50 border-l text-green-800">ผ่าน</th>
         <th class="text-center bg-red-50 border-l text-red-800">ไม่ผ่าน</th>
-        <th class="text-center bg-orange-50 border-l text-orange-800">ยังไม่ส่ง</th>
+        <th class="text-center bg-orange-50 border-l text-orange-800">ยังไม่ส่ง/ทั้งหมด</th>
       </tr>
     </thead>
     <tbody>`;
@@ -361,11 +359,10 @@ function renderSummary(rows) {
       <td class="text-center font-bold text-blue-600 border-l bg-blue-50/30">${submitted}</td>
       <td class="text-center text-green-600 border-l bg-green-50/30">${d.pass}</td>
       <td class="text-center text-red-600 border-l bg-red-50/30">${d.fail}</td>
-      <td class="text-center text-orange-600 border-l bg-orange-50/30">${d.wait}</td>
+      <td class="text-center text-orange-600 border-l bg-orange-50/30">${d.wait} / ${d.total}</td>
     </tr>`;
   });
   
-  // Footer row
   h += `
     <tr class="bg-slate-200 font-extrabold text-slate-800 border-t-2">
       <td>รวมทั้งตำบล</td>
@@ -373,7 +370,7 @@ function renderSummary(rows) {
       <td class="text-center text-blue-900 border-l border-slate-300">${sSub}</td>
       <td class="text-center text-green-900 border-l border-slate-300">${sPass}</td>
       <td class="text-center text-red-900 border-l border-slate-300">${sFail}</td>
-      <td class="text-center text-orange-900 border-l border-slate-300">${sWait}</td>
+      <td class="text-center text-orange-900 border-l border-slate-300">${sWait} / ${sTot}</td>
     </tr>
     </tbody>
   </table>`;
@@ -385,7 +382,6 @@ function renderSummary(rows) {
 
 /* ===== Render ===== */
 function render(rows){
-  // เรียกฟังก์ชันสรุป
   renderSummary(rows);
 
   const thead=$('#thead'), tbody=$('#tbody'), sum=$('#summaryBadge');
@@ -432,9 +428,7 @@ function render(rows){
 
   sum.classList.remove('hidden');
   const total=rows.length;
-  // sum.textContent = `สรุป: ผ่าน ${total - fail - pending} • ไม่ผ่าน ${fail} • ยังไม่ส่ง ${pending} / ทั้งหมด ${total}`;
-  // เปลี่ยน text สรุปเล็กน้อยให้ดูง่ายขึ้น
-  sum.innerHTML = `รวม: <b>${total}</b> | ผ่าน <b>${total - fail - pending}</b> | ไม่ผ่าน <b>${fail}</b> | ยังไม่ส่ง <b>${pending}</b>`;
+  sum.innerHTML = `รวม: <b>${total}</b> | ผ่าน <b>${total - fail - pending}</b> | ไม่ผ่าน <b>${fail}</b> | ยังไม่ส่ง <b>${pending}/${total}</b>`;
   sum.className = 'badge ' + (fail||pending? 'bad':'ok');
 }
 
