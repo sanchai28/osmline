@@ -3,80 +3,162 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=5, user-scalable=yes" />
-<title>Smart Care – Audit (แผน vs ผลการปฏิบัติงาน)</title>
+<title>Smart Care – Audit</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Tailwind -->
 <script src="https://cdn.tailwindcss.com"></script>
+<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <style>
-  body{background: radial-gradient(120% 140% at 0% 0%, #C084FC 0%, #A78BFA 30%, #8B5CF6 55%, #F472B6 90%) fixed;}
-  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; --scale:1; font-size:calc(16px * var(--scale)); }
-  .glass{ background: rgba(255,255,255,.86); backdrop-filter: blur(14px); }
-  .card{ border-radius:18px; background:#fff; box-shadow:0 10px 24px rgba(168,85,247,.2); }
-  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border-radius:12px; padding:.55rem .9rem; font-weight:700; color:#fff; background:linear-gradient(135deg,#8B5CF6 0%,#F472B6 100%);}
-  .btn-ghost{ background:#fff; color:#6b21a8; border:1px solid #e5e7eb; }
-  .btn-sm{ padding:.35rem .6rem; font-size:.85rem; border-radius:10px; }
-  .input,.select{ width:100%; border:1px solid #e5e7eb; border-radius:12px; padding:.55rem .75rem; }
-  .table{ width:100%; border-collapse:collapse;}
-  .table th,.table td{ border-bottom:1px solid #e5e7eb; padding:.55rem .6rem; font-size:.95rem; vertical-align:top; }
-  .badge{ display:inline-block; padding:.28rem .55rem; border-radius:9999px; font-weight:700; font-size:.8rem;}
-  .ok{ background:#D1FAE5; color:#065F46; }
-  .bad{ background:#FEE2E2; color:#991B1B; }
-  .warn{ background:#FEF3C7; color:#92400E; }
-  .muted{ color:#64748b; }
-  .mono{ font-variant-numeric: tabular-nums; font-feature-settings:"tnum"; }
+  :root {
+    --font-main: 'Sarabun', sans-serif;
+  }
+  body {
+    font-family: var(--font-main);
+    background: #f0f2f5;
+    background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+    background-size: 24px 24px;
+    color: #334155;
+  }
+  
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.5);
+  }
+  
+  .card-shadow {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  }
+
+  .btn-gradient {
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    transition: all 0.3s ease;
+  }
+  .btn-gradient:hover {
+    filter: brightness(110%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+  }
+
+  .badge-soft-green { background-color: #dcfce7; color: #166534; }
+  .badge-soft-red { background-color: #fee2e2; color: #991b1b; }
+  .badge-soft-blue { background-color: #dbeafe; color: #1e40af; }
+  
+  /* Table styling */
+  .modern-table th { font-weight: 600; color: #64748b; letter-spacing: 0.025em; }
+  .modern-table td { color: #334155; }
 </style>
 </head>
-<body class="min-h-screen p-4">
-  <div class="max-w-6xl mx-auto space-y-4">
-    <header class="glass rounded-2xl p-4 text-white flex items-center justify-between"
-            style="background:linear-gradient(135deg,#8B5CF6 0%,#F472B6 100%); box-shadow:0 10px 24px rgba(147,51,234,.35);">
-      <div>
-        <div class="text-2xl font-extrabold">Smart Care – Audit</div>
-        <div class="text-white/90">เทียบ “แผน (plan_osm)” vs “ผลการปฏิบัติงาน (report_osm)” ต่อคน ต่อเดือน</div>
+<body class="min-h-screen p-4 md:p-6">
+  <div class="max-w-6xl mx-auto space-y-6">
+    
+    <!-- Header -->
+    <header class="glass rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 card-shadow relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-64 h-64 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+      
+      <div class="relative z-10">
+        <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-fuchsia-600">
+          Smart Care Audit
+        </h1>
+        <p class="text-slate-500 text-sm mt-1">ตรวจสอบแผน (Plan) เทียบกับ ผลการปฏิบัติงาน (Report)</p>
       </div>
-      <div class="flex gap-2">
-        <button id="fontDown" class="btn-ghost px-3">A−</button>
-        <button id="fontUp" class="btn-ghost px-3">A+</button>
+      
+      <div class="flex items-center gap-3 relative z-10">
+        <button id="fontDown" class="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center transition-colors">A-</button>
+        <button id="fontUp" class="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center transition-colors">A+</button>
       </div>
     </header>
 
-    <section class="glass rounded-2xl p-4">
-      <div class="grid md:grid-cols-[220px_1fr_auto_auto] gap-2">
-        <select id="selMonth" class="select">
+    <!-- Controls -->
+    <section class="bg-white rounded-2xl p-5 card-shadow">
+      <div class="grid md:grid-cols-[200px_1fr_auto_auto] gap-3">
+        <select id="selMonth" class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-violet-500 focus:border-violet-500 block p-2.5 outline-none">
           <option value="">— เลือกเดือน —</option>
           <option>ตุลาคม</option><option>พฤศจิกายน</option><option>ธันวาคม</option>
           <option>มกราคม</option><option>กุมภาพันธ์</option><option>มีนาคม</option>
           <option>เมษายน</option><option>พฤษภาคม</option><option>มิถุนายน</option>
           <option>กรกฎาคม</option><option>สิงหาคม</option><option>กันยายน</option>
         </select>
-        <input id="filterText" class="input" placeholder="ตัวกรองชื่อ/หมู่บ้าน/CID (ไม่จำเป็น)" />
-        <button id="btnLoadAPI" class="btn">โหลดจาก API</button>
-        <button id="btnBulkUpdate" class="btn-ghost">อัปเดตทั้งหมด → check_plan</button>
-      </div>
-      <p class="muted text-sm mt-2">
-        เกณฑ์ “<b>ผ่าน</b>”: ทุกข้อรายงาน ≥ แผน และ <code>วันที่บันทึก</code> ≥ <code>วันที่ส่ง</code>
-      </p>
-    </section>
+        
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </div>
+          <input id="filterText" class="w-full pl-10 bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-violet-500 focus:border-violet-500 block p-2.5 outline-none" placeholder="ค้นหาชื่อ, หมู่, หรือเลขบัตร..." />
+        </div>
 
-    <section class="card p-4">
-      <div class="flex items-center justify-between mb-4">
-        <div class="font-bold text-lg">ผลการตรวจสอบ</div>
-        <div id="summaryBadge" class="badge warn hidden"></div>
+        <button id="btnLoadAPI" class="btn-gradient text-white font-medium rounded-xl text-sm px-5 py-2.5 text-center flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+          โหลดข้อมูล
+        </button>
+        
+        <button id="btnBulkUpdate" class="text-violet-600 bg-violet-50 hover:bg-violet-100 border border-violet-200 font-medium rounded-xl text-sm px-5 py-2.5 transition-colors">
+          อัปเดตสถานะทั้งหมด
+        </button>
       </div>
       
-      <div id="mooSummary" class="mb-6 overflow-x-auto hidden"></div>
-
-      <div id="resultBox" class="mt-3 overflow-auto">
-        <table class="table">
-          <thead id="thead"></thead>
-          <tbody id="tbody"></tbody>
-        </table>
+      <div class="mt-3 flex items-start gap-2 text-xs text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100">
+        <svg class="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span><b>เกณฑ์การผ่าน:</b> ต้องส่งครบทุกข้อ (รายงาน ≥ แผน) และ วันที่บันทึกต้องไม่ก่อนวันที่ส่งแผน</span>
       </div>
     </section>
+
+    <!-- Summary & Result -->
+    <section id="mainContent" class="hidden space-y-6">
+      
+      <!-- 1. Moo Summary -->
+      <div id="mooSummary"></div>
+
+      <!-- 2. Detailed List -->
+      <div class="bg-white rounded-2xl card-shadow overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <h3 class="font-bold text-slate-700">รายการรายบุคคล</h3>
+          <div id="summaryBadge" class="hidden text-xs font-semibold px-2.5 py-0.5 rounded-full"></div>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left modern-table">
+            <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
+              <tr>
+                <th class="px-6 py-3 w-[10%]">หมู่</th>
+                <th class="px-6 py-3 w-[15%]">เลขบัตร</th>
+                <th class="px-6 py-3 w-[20%]">ชื่อ-สกุล</th>
+                <th class="px-6 py-3 w-[15%] text-center">สถานะ</th>
+                <th class="px-6 py-3 w-[25%]">รายละเอียด/ปัญหา</th>
+                <th class="px-6 py-3 w-[15%] text-right">วันที่ (แผน / ผล)</th>
+                <th class="px-6 py-3 text-center">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="tbody" class="divide-y divide-slate-100">
+              <!-- JS Injected -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Placeholder when empty -->
+    <div id="emptyState" class="text-center py-12 text-slate-400">
+      <svg class="w-16 h-16 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+      <p>กรุณาเลือกเดือนและโหลดข้อมูลเพื่อเริ่มตรวจสอบ</p>
+    </div>
+
   </div>
 
 <script>
 /* ===== Config ===== */
-const API_BASE = 'https://script.google.com/macros/s/AKfycbx0hTIeuQwVgZO7EEq57nXZxGakCxn-b3wRx5L4RzoOkgHTlkyoRMsSoWQIqHzfy4Pb/exec'; 
+// ใช้ URL ที่ถูกต้องจากไฟล์ต้นฉบับ audit.html ของคุณ
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwX7JgyVpNT5gmrVcwY9sry_XPCntXOGKjP2oh2YAhxGgd23KM8XcrcksKWmiZMCk74/exec'; 
+
 const METRICS = [
   '1.1','1.1.1','1.1.2','1.2','1.2.1','1.2.2',
   '1.3','1.3.1','1.3.2','1.3.3','1.4',
@@ -86,379 +168,452 @@ const METRICS = [
   '8.1','8(1)','8(2)','9.1','9.2'
 ];
 
-/* ===== UI helpers ===== */
-const $=s=>document.querySelector(s);
-function setScale(v){ const x=Math.min(1.7,Math.max(.9,v)); document.documentElement.style.setProperty('--scale',String(x)); }
-$('#fontDown').onclick=()=>{const c=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scale'))||1; setScale(c-.1);}
-$('#fontUp').onclick=()=>{const c=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scale'))||1; setScale(c+.1);}
-function loading(t='กำลังโหลด…'){ Swal.fire({title:t, allowOutsideClick:false, allowEscapeKey:false, didOpen:()=>Swal.showLoading()}); }
-function toastErr(msg){ Swal.fire({icon:'error', title:'ผิดพลาด', text:msg}); }
-function ok(msg){ Swal.fire({icon:'success', title:msg, timer:1200, showConfirmButton:false}); }
-function onlyDigit(s){ return String(s||'').replace(/[^\d]/g,''); }
-const n = v => { const x = Number(String(v??'').trim()); return isFinite(x)?x:0; };
+/* ชื่อรายการสำหรับแปลงเลขข้อ -> ข้อความเต็ม */
+const METRIC_NAMES = {
+  '1.1': 'อสม. เยี่ยมให้คําแนะนําหญิงตั้งครรภ์ (รายใหม่)',
+  '1.1.1': 'อสม. ค้นหาหญิงตั้งครรภ์อายุต่ำกว่า 15 ปี (รายใหม่)',
+  '1.1.2': 'อสม. คิดตามหญิงตั้งครรภ์ให้ได้รับยาเม็ดเสริมไอโอดีน',
+  '1.2': 'อสม.บริการเยี่ยมให้คำแนะนำหญิงหลังคลอด (รายใหม่)',
+  '1.2.1': 'มารดาที่ไม่สามารถเลี้ยงดูบุตรด้วยนมแม่อย่างเดียวครบ 6 เดือน (รายใหม่)',
+  '1.2.2': 'อสม. ติดตามหญิงหลังคลอดในนมบุตร 6 เดือน ให้ได้รับยาเม็ตเสริมไอโอดีน',
+  '1.3': 'อสม.เยี่ยมบ้านและให้คำแนะนำผู้สูงอายุด้านการดูแลสุขภาพ',
+  '1.3.1': 'ผู้สูงอายุที่เป็นโรคเรื้อรังและถูกทอดทิ้งอยู่เพียงลำพัง (รายใหม่)',
+  '1.3.2': 'คัดกรอง ประเมินภาวะสุขภาพผู้สูงอายุ (ภาวะถดถอย 9 ด้าน)',
+  '1.3.3': 'สร้างความรอบรู้ และให้บริการดูแลสุขภาพตามสภาพปัญหาภาวะถดถอยในแต่ละด้านของผู้สูงอายุ และประสานภาคีเครือข่ายในการดูแลผู้สูงอายุให้มีชีวิตความเป็นอยู่ที่ดี',
+  '1.4': 'อสม.เยี่ยมบ้านและให้คำแนะนำผู้พิการด้านการดูแลสุขภาพ',
+  '2.1': 'เฝ้าระวัง ป้องกัน ควบคุมโรคไข้เลือดออก (ปิด เปลี่ยน ปล่อย ปรับปรุง ปฏิบัติเป็นนิสัย)',
+  '2.2': 'เฝ้าระวัง ป้องกัน ควบคุมโรคไข้หวัดใหญ่ (ปิด ล้าง เลี่ยง หยุด)',
+  '2.3': 'เฝ้าระวัง คัดกรอง และให้คำแนะนำกลุ่มเสี่ยงโรค (โรคเบาหวาน โรคความดันโลหิตสูง โรคมะเร็ง โรคหัวใจ โรคหลอดเลือดสมอง)',
+  '2.4': 'ให้คำแนะนำประชาชนบริโภคผลิตภัณฑ์/อาหาร/เกลือที่ผสมไอโอดีน',
+  '2.5': 'ให้คำแนะนำประชาชนลดกิน หวาน อาหารมันและเค็ม',
+  '2.6': 'สำรวจ เฝ้าระวัง ป้องกันโรคในกลุ่มเป้าหมาย 607 และปักหมุดแจ้งพิกัดกลุ่มเปราะบางในแอปพลิเคชันพันภัย',
+  '3.1': 'เยี่ยมบ้าน ให้คำแนะนำการดูแลผู้ป่วยโรคเบาหวาน ความดันโลหิต มะเร็ง หัวใจ ฯลฯ',
+  '4.1': 'เฝ้าระวังและให้คำแนะนำการบริโภคอาหารปลอดภัย',
+  '5.1': 'อสม.ร่วมกิจกรรมจิตอาสากับเครือข่ายอื่น',
+  '5.2': 'จัดทำแผนสุขภาพ จัดหางบประมาณ จัดกิจกรรมสุขภาพ และประเมินผล',
+  '6(1)': 'กลุ่มผู้สูงอายุ ที่มีปัญหา ติดบ้านติดเตียง',
+  '6(2)': 'กลุ่มผู้ป่วยโรคไม่ติดต่อเรื้อรัง',
+  '6(3)': 'กลุ่มผู้ป่วยที่มีปัญหาโรคไต',
+  '7(1)': 'ให้ความรู้พื้นฐานการใช้ยาปฎิชีวนะหรือข้อควรระวังการซื้อยากินเองสำหรับโรคหวัด/ท้องเสียและการใช้สมุนไพรที่เสี่ยงต่อการผสมสาร สเตียรอยด์',
+  '7(2)': 'เฝ้าระวังและคัดกรองความเสี่ยงต่อการใช้ยาไม่ปลอดภัยในชุมชน',
+  '8.1': 'ร่วมเป็นทีมหมอครอบครัวเยี่ยมบ้าน ดูแลผู้ป่วยร่วมกับเจ้าหน้าที่สาธารณสุข/สหวิชาชีพ',
+  '8(1)': 'ช่วยปรับเปลี่ยนพฤติกรรมสุขภาพกลุ่มเสี่ยง',
+  '8(2)': 'เสริมพลังใจในกลุ่มผู้ป่วยเรื้อรัง',
+  '9.1': 'ชวนคนเลิกบุหรี่/สุรา ได้สำเร็จ (รายใหม่)',
+  '9.2': 'ร่วมกับเจ้าหน้าที่คัดกรองกลุ่มเสี่ยงดื่มเครื่องดื่มแอลกอฮอล์/สูบบุหรี่'
+};
 
-/* ===== Date utils ===== */
+/* ===== UI Helpers ===== */
+const $ = s => document.querySelector(s);
+const toNumber = v => { const x = Number(String(v??'').trim()); return isFinite(x)?x:0; };
+const onlyDigit = s => String(s||'').replace(/[^\d]/g,'');
+
+// Font Scaling
+function setScale(v){ const x=Math.min(1.4,Math.max(0.9,v)); document.documentElement.style.fontSize = (x*16)+'px'; }
+let currentScale = 1.0;
+$('#fontDown').onclick = () => setScale(currentScale -= 0.05);
+$('#fontUp').onclick = () => setScale(currentScale += 0.05);
+
+function loading(t='กำลังประมวลผล...'){ Swal.fire({title:t, allowOutsideClick:false, didOpen:()=>Swal.showLoading()}); }
+function toastErr(msg){ Swal.fire({icon:'error', title:'ผิดพลาด', text:msg, confirmButtonColor:'#a855f7'}); }
+function ok(msg){ Swal.fire({icon:'success', title:msg, timer:1500, showConfirmButton:false}); }
+
+/* ===== Date Logic ===== */
 function fmtLocal(d){
-  if(!(d instanceof Date) || isNaN(d)) return '';
+  if(!(d instanceof Date) || isNaN(d)) return '-';
   const y = d.getFullYear();
   const m = String(d.getMonth()+1).padStart(2,'0');
   const dd = String(d.getDate()).padStart(2,'0');
   return `${y}-${m}-${dd}`;
 }
-function parseDateAny(v){
-  if (v == null || v === '') return null;
-  if (Object.prototype.toString.call(v) === '[object Date]') return isNaN(v) ? null : v;
 
+const TH_MONTH_IDX = { 'มกราคม':0,'กุมภาพันธ์':1,'มีนาคม':2,'เมษายน':3,'พฤษภาคม':4,'มิถุนายน':5,'กรกฎาคม':6,'สิงหาคม':7,'กันยายน':8,'ตุลาคม':9,'พฤศจิกายน':10,'ธันวาคม':11 };
+
+function parseDateAny(v){
+  if(!v) return null;
+  if(v instanceof Date) return isNaN(v)?null:v;
   const s = String(v).trim();
   const be = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
-  if (be) {
-    let [_, dd, mm, yyyy] = be;
-    let y = parseInt(yyyy, 10);
-    if (y > 2400) y -= 543;
-    return new Date(y, parseInt(mm,10)-1, parseInt(dd,10));
+  if(be){
+    let [_, d, m, y] = be; y=parseInt(y); if(y>2400) y-=543;
+    return new Date(y, parseInt(m)-1, parseInt(d));
   }
-  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) { const d=new Date(s); return isNaN(d)?null:d; }
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
-  if (/^\d{3,6}$/.test(s)) {
-    const num = parseInt(s,10);
+  const d2 = new Date(s);
+  if(!isNaN(d2)) return d2;
+  // Excel Serial
+  if(/^\d{4,6}$/.test(s)){
     const epoch = new Date(Date.UTC(1899, 11, 30));
-    const ms = num * 86400000;
-    const d = new Date(epoch.getTime() + ms);
-    return isNaN(d) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    return new Date(epoch.getTime() + parseInt(s)*86400000);
   }
-  const d2=new Date(s);
-  return isNaN(d2)?null:d2;
+  return null;
 }
 
-/* ===== Month helpers for plan 'day only' ===== */
-const TH_MONTH_IDX = {
-  'มกราคม':0,'กุมภาพันธ์':1,'มีนาคม':2,'เมษายน':3,'พฤษภาคม':4,'มิถุนายน':5,
-  'กรกฎาคม':6,'สิงหาคม':7,'กันยายน':8,'ตุลาคม':9,'พฤศจิกายน':10,'ธันวาคม':11
-};
-function makeDateFromDay(day, selectedMonthName, hintDate){
-  const m = TH_MONTH_IDX[selectedMonthName];
-  if (m == null) return null;
-  let y = (hintDate instanceof Date && !isNaN(hintDate)) ? hintDate.getFullYear() : (new Date()).getFullYear();
-  return new Date(y, m, day);
-}
-function parsePlanDate(val, selectedMonthName, hintReportDate){
-  if (val == null || val === '') return null;
+function parsePlanDate(val, monthName, hintDate){
+  if(!val) return null;
   const s = String(val).trim();
-  if (/^\d{1,2}$/.test(s)) {
-    return makeDateFromDay(parseInt(s,10), selectedMonthName, hintReportDate);
+  if(/^\d{1,2}$/.test(s)){
+    const m = TH_MONTH_IDX[monthName];
+    if(m==null) return null;
+    let y = hintDate ? hintDate.getFullYear() : new Date().getFullYear();
+    return new Date(y, m, parseInt(s));
   }
   return parseDateAny(val);
 }
 
-/* ===== API ===== */
-async function apiGet(params){
-  const url=new URL(API_BASE);
-  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
-  const res=await fetch(url,{method:'GET'});
-  return res.json();
-}
-async function apiPost(obj){
-  const res = await fetch(API_BASE, {
-    method:'POST',
-    headers:{'Content-Type':'text/plain'},
-    body: JSON.stringify(obj)
-  });
-  return res.json();
-}
-
-/* ===== Compare core ===== */
-function indexByCID(rows){ const m=new Map(); rows.forEach(r=>{ const cid=onlyDigit(r['หมายเลขบัตรประชาชน']||''); if(cid) m.set(cid,r); }); return m; }
-function mooNum(v){ const s=String(v||'').trim(); const m=s.match(/\d+/); return m?parseInt(m[0],10):9999; }
-function planIsBlank(p){ return METRICS.every(k => String(p[k] ?? '').toString().trim() === ''); }
-
+/* ===== Logic Core ===== */
 let LAST_ROWS = [];
 
-function compare(planRows, reportRows, selectedMonth, filter=''){
-  const pMap=indexByCID(planRows), rMap=indexByCID(reportRows);
-  const keys=new Set([...pMap.keys(), ...rMap.keys()]);
-  const fl=filter.trim().toLowerCase();
-  const out=[];
-  keys.forEach(cid=>{
-    const p=pMap.get(cid)||{};
-    const r=rMap.get(cid)||null;
-    const name=(p['ชื่อ-นามสกุล']||r?.['ชื่อ-นามสกุล']||'').toString();
-    const moo =(p['หมู่ที่']||r?.['หมู่ที่']||'').toString();
+function indexByCID(rows){ const m=new Map(); rows.forEach(r=>{ const c=onlyDigit(r['หมายเลขบัตรประชาชน']); if(c) m.set(c,r); }); return m; }
+function mooNum(v){ const s=String(v||'').trim(); const m=s.match(/\d+/); return m?parseInt(m[0]):999; }
 
-    if(fl && !(name.toLowerCase().includes(fl) || moo.toLowerCase().includes(fl) || cid.includes(fl))) return;
+function compare(planRows, reportRows, month, filter=''){
+  const pMap = indexByCID(planRows);
+  const rMap = indexByCID(reportRows);
+  const allCIDs = new Set([...pMap.keys(), ...rMap.keys()]);
+  const fl = filter.trim().toLowerCase();
+  
+  const results = [];
+  allCIDs.forEach(cid => {
+    const p = pMap.get(cid) || {};
+    const r = rMap.get(cid);
+    
+    // ข้อมูลพื้นฐาน
+    const name = (p['ชื่อ-นามสกุล'] || r?.['ชื่อ-นามสกุล'] || '-').toString();
+    const moo = (p['หมู่ที่'] || r?.['หมู่ที่'] || '-').toString();
+    
+    // Filter
+    if(fl && !(name.includes(fl) || moo.includes(fl) || cid.includes(fl))) return;
 
-    if (p && planIsBlank(p)) {
-      out.push({ cid, name, moo, status:'แผนไม่ถูกต้อง',
-        issues:['แผนไม่ถูกต้อง (ใส่วันที่ไม่ครบทุกข้อ)'],
-        datePlan: p['วันที่ส่ง']||'', dateReport: r?.['วันที่บันทึก']||'' });
-      return;
+    // Check Logic
+    const issues = [];
+    let status = 'ผ่าน';
+    let datePlan = null, dateReport = null;
+
+    // 1. Plan Blank?
+    const pBlank = METRICS.every(k => !String(p[k]||'').trim());
+    if(pBlank && Object.keys(p).length > 0) {
+      status = 'แผนไม่ถูกต้อง';
+      issues.push('ไม่มีข้อมูลเป้าหมายในไฟล์แผน');
+    }
+    // 2. No Report?
+    else if(!r) {
+      status = 'ยังไม่ส่ง';
+      issues.push('ยังไม่ส่งรายงาน');
+    }
+    // 3. Compare Metrics
+    else {
+      METRICS.forEach(k => {
+        if(toNumber(r[k]) < toNumber(p[k])) {
+          // ใช้ชื่อเต็มแทนเลขข้อ
+          const label = METRIC_NAMES[k] || `ข้อ ${k}`;
+          issues.push(`${label} (รายงานแอพ ${toNumber(r[k])} ไม่ตรงในแผน ${toNumber(p[k])})`);
+        }
+      });
+      
+      // 4. Compare Date
+      dateReport = parseDateAny(r['วันที่บันทึก']);
+      datePlan = parsePlanDate(p['วันที่ส่ง'], month, dateReport);
+      
+      if(datePlan && dateReport) {
+        const d1 = new Date(datePlan); d1.setHours(0,0,0,0);
+        const d2 = new Date(dateReport); d2.setHours(0,0,0,0);
+        if(d2 < d1) {
+           issues.push(`ส่งล่าช้า (แผน ${d1.getDate()} แต่ส่ง ${d2.getDate()})`);
+        }
+      }
+      
+      if(issues.length > 0) status = 'ไม่ผ่าน';
     }
 
-    if(!r){
-      out.push({ cid, name, moo, status:'ยังไม่ส่งรายงานผลการปฏิบัติงาน',
-        issues:['ยังไม่ส่งรายงานผลการปฏิบัติงาน'],
-        datePlan: p['วันที่ส่ง']||'', dateReport:'' });
-      return;
-    }
-
-    const issues=[];
-    METRICS.forEach(k=>{
-      const pv=n(p[k]); const rv=n(r[k]);
-      if(rv < pv) issues.push(`ข้อ ${k} รายงานมา ${rv} ในแผน ${pv}`);
-    });
-
-    const dr = parseDateAny(r['วันที่บันทึก']);
-    const dp = parsePlanDate(p['วันที่ส่ง'], selectedMonth, dr);
-    let dateOk=true;
-    if(dp && dr){ dateOk = dr.getTime() >= dp.getTime(); }
-    else if(dp && !dr){ dateOk=false; }
-
-    if(!dateOk){
-      const dPlan = dp ? String(dp.getDate()) : '-';
-      const dRep  = dr ? String(dr.getDate()) : '-';
-      issues.push(`ส่งงานไม่ตรงวันที่กำหนดในแผน (กำหนดส่ง ${dPlan} แต่ส่ง ${dRep})`);
-    }
-
-    out.push({
-      cid, name, moo,
-      status: issues.length? 'ไม่ผ่าน':'ผ่าน',
-      issues,
-      datePlan: dp ? fmtLocal(dp) : (p['วันที่ส่ง']||''),
-      dateReport: dr ? fmtLocal(dr) : (r['วันที่บันทึก']||'')
+    results.push({
+      cid, name, moo, status, issues,
+      dp: datePlan, dr: dateReport
     });
   });
 
-  out.sort((a,b)=>{
-    const am=mooNum(a.moo), bm=mooNum(b.moo);
-    if(am!==bm) return am-bm;
-    return a.cid.localeCompare(b.cid);
+  return results.sort((a,b) => {
+    const dm = mooNum(a.moo) - mooNum(b.moo);
+    if(dm !== 0) return dm;
+    return a.name.localeCompare(b.name);
   });
-
-  LAST_ROWS = out;
-  return out;
 }
 
-/* ===== Update to check_plan ===== */
-function toCheckPayload(row, month){
-  let checkStatus = 'ตรวจสอบแล้ว';
-  let note = '';
-  if (row.status !== 'ผ่าน') {
-    checkStatus = 'ไม่ถูกต้อง';
-    note = (row.issues||[]).join(' • ');
-  }
-  return {
-    action: 'admin_update',
-    cid: row.cid,
-    month: month,
-    checkStatus: checkStatus,
-    note: note
-  };
-}
-
-async function updateOne(row, month){
-  try{
-    const payload = toCheckPayload(row, month);
-    const name = row.name || row.cid;
-    const confirm = await Swal.fire({
-      title: 'อัปเดตผลตรวจ?',
-      html: `จะอัปเดต <b>${name}</b> เป็น <b>${payload.checkStatus}</b><br><small>${payload.note||'—'}</small>`,
-      icon: 'question', showCancelButton:true, confirmButtonText:'อัปเดต'
-    });
-    if (!confirm.isConfirmed) return;
-
-    loading('กำลังอัปเดต…');
-    const res = await apiPost(payload);
-    Swal.close();
-    if (!res.ok) return toastErr(res.error || 'อัปเดตไม่สำเร็จ');
-    ok('อัปเดตสำเร็จ');
-  }catch(err){ Swal.close(); toastErr(err.message); }
-}
-
-async function bulkUpdate(month){
-  if (!LAST_ROWS.length) return toastErr('ยังไม่มีผลลัพธ์');
-
-  const updates = LAST_ROWS.map(row => {
-    let checkStatus = 'ตรวจสอบแล้ว';
-    let note = '';
-    if (row.status !== 'ผ่าน') {
-      checkStatus = 'ไม่ถูกต้อง';
-      note = (row.issues || []).join(' • ');
-    }
-    return { cid: row.cid, checkStatus, note };
-  });
-
-  const confirm = await Swal.fire({
-    title: 'อัปเดตทั้งหมด?',
-    html: `จะอัปเดต <b>${updates.length}</b> รายการไปยัง <b>check_plan</b> ในเดือน <b>${month}</b>`,
-    icon: 'warning', showCancelButton:true, confirmButtonText:'อัปเดตทั้งหมด'
-  });
-  if (!confirm.isConfirmed) return;
-
-  try{
-    loading('กำลังอัปเดตรายการทั้งหมด…');
-    const res = await apiPost({
-      action: 'admin_update_batch',
-      month,
-      updates
-    });
-    Swal.close();
-    if (!res.ok) return toastErr(res.error || 'อัปเดตไม่สำเร็จ');
-    Swal.fire({icon:'success', title:'เสร็จสิ้น',
-      html:`อัปเดตสำเร็จ ${res.updated||0} รายการ<br>ข้าม ${res.skipped||0} รายการ`});
-  }catch(err){ Swal.close(); toastErr(err.message); }
-}
-
-
-/* ===== Summary Render Function ===== */
+/* ===== Render Summary Widget ===== */
 function renderSummary(rows) {
   const grp = {};
+  let totalAll=0, passAll=0, failAll=0, waitAll=0;
+
   rows.forEach(r => {
-    const m = r.moo || 'ไม่ระบุ';
-    if (!grp[m]) grp[m] = { total: 0, pass: 0, fail: 0, wait: 0 };
+    const m = r.moo || '?';
+    if(!grp[m]) grp[m] = { total:0, pass:0, fail:0, wait:0 };
     grp[m].total++;
+    totalAll++;
     
-    if (r.status === 'ผ่าน') {
-      grp[m].pass++;
-    } else if (r.status === 'ยังไม่ส่งรายงานผลการปฏิบัติงาน') {
-      grp[m].wait++;
-    } else {
-      grp[m].fail++;
-    }
+    if(r.status === 'ผ่าน') { grp[m].pass++; passAll++; }
+    else if(r.status === 'ยังไม่ส่ง') { grp[m].wait++; waitAll++; }
+    else { grp[m].fail++; failAll++; }
   });
 
-  const keys = Object.keys(grp).sort((a, b) => mooNum(a) - mooNum(b));
-  
-  let h = `
-  <table class="table w-full text-sm border">
-    <thead>
-      <tr class="bg-slate-100 font-bold text-slate-700">
-        <th class="text-left">หมู่ที่</th>
-        <th class="text-center bg-white border-l">ทั้งหมด</th>
-        <th class="text-center bg-blue-50 border-l text-blue-800">ส่งแล้ว</th>
-        <th class="text-center bg-green-50 border-l text-green-800">ผ่าน</th>
-        <th class="text-center bg-red-50 border-l text-red-800">ไม่ผ่าน</th>
-        <th class="text-center bg-orange-50 border-l text-orange-800">ยังไม่ส่ง/ทั้งหมด</th>
-      </tr>
-    </thead>
-    <tbody>`;
-  
-  let sTot=0, sSub=0, sPass=0, sFail=0, sWait=0;
-  
+  const keys = Object.keys(grp).sort((a,b) => mooNum(a) - mooNum(b));
+
+  let html = `
+    <div class="bg-white rounded-2xl card-shadow overflow-hidden border border-slate-100">
+      <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+        <div>
+          <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+            <span class="inline-block w-2 h-6 bg-violet-500 rounded-full"></span>
+            สรุปภาพรวมรายหมู่
+          </h3>
+          <p class="text-xs text-slate-500 mt-1 pl-4">เป้าหมายทั้งหมด ${totalAll} ราย</p>
+        </div>
+        <div class="flex items-center gap-4 text-sm">
+           <div class="flex flex-col items-end">
+              <span class="font-bold text-emerald-600">${passAll} ผ่าน</span>
+              <span class="text-xs text-slate-400">(${(totalAll>0 ? passAll/totalAll*100 : 0).toFixed(1)}%)</span>
+           </div>
+           <div class="w-px h-8 bg-slate-200"></div>
+           <div class="flex flex-col items-end">
+              <span class="font-bold text-rose-500">${failAll} ไม่ผ่าน</span>
+              <span class="text-xs text-slate-400">(${(totalAll>0 ? failAll/totalAll*100 : 0).toFixed(1)}%)</span>
+           </div>
+        </div>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-xs text-slate-500 uppercase bg-white border-b border-slate-100">
+              <th class="py-3 px-4 text-left font-semibold tracking-wider">หมู่ที่</th>
+              <th class="py-3 px-4 text-center font-semibold tracking-wider w-[35%]">ความคืบหน้า (ส่ง/แผน)</th>
+              <th class="py-3 px-4 text-center font-semibold text-emerald-600 w-[20%]">ผ่าน</th>
+              <th class="py-3 px-4 text-center font-semibold text-rose-600 w-[20%]">ไม่ผ่าน</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+  `;
+
   keys.forEach(k => {
     const d = grp[k];
     const submitted = d.pass + d.fail;
-    sTot += d.total; 
-    sSub += submitted; 
-    sPass += d.pass; 
-    sFail += d.fail; 
-    sWait += d.wait;
-    
-    h += `
-    <tr class="hover:bg-slate-50 border-b">
-      <td class="font-bold text-slate-700">${k}</td>
-      <td class="text-center font-bold border-l">${d.total}</td>
-      <td class="text-center font-bold text-blue-600 border-l bg-blue-50/30">${submitted}</td>
-      <td class="text-center text-green-600 border-l bg-green-50/30">${d.pass}</td>
-      <td class="text-center text-red-600 border-l bg-red-50/30">${d.fail}</td>
-      <td class="text-center text-orange-600 border-l bg-orange-50/30">${d.wait} / ${d.total}</td>
-    </tr>`;
+    const pct = d.total > 0 ? (submitted / d.total) * 100 : 0;
+    let progColor = 'bg-violet-500';
+    if(pct >= 100) progColor = 'bg-emerald-500';
+    else if(pct < 50) progColor = 'bg-amber-400';
+
+    html += `
+      <tr class="hover:bg-slate-50/80 transition-colors group">
+        <td class="py-3 px-4 font-bold text-slate-700">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs group-hover:bg-violet-100 group-hover:text-violet-600 transition-colors">
+              ${k}
+            </div>
+            <span class="hidden sm:inline text-slate-500 font-normal">หมู่บ้าน</span>
+          </div>
+        </td>
+        <td class="py-3 px-4 align-middle">
+          <div class="flex flex-col gap-1.5">
+            <div class="flex justify-between items-end px-1">
+               <span class="font-bold text-slate-700 text-sm">${submitted} <span class="text-slate-400 font-normal">/ ${d.total}</span></span>
+               <span class="text-[10px] font-bold text-slate-400">${pct.toFixed(0)}%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+              <div class="${progColor} h-2 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        </td>
+        <td class="py-3 px-4 text-center">
+          <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg ${d.pass > 0 ? 'bg-emerald-100 text-emerald-700 font-bold' : 'text-slate-300'}">
+            ${d.pass}
+          </span>
+        </td>
+        <td class="py-3 px-4 text-center">
+           ${d.fail > 0 
+             ? `<span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-100 text-rose-600 font-bold shadow-sm ring-1 ring-rose-200">${d.fail}</span>`
+             : `<span class="text-slate-300">-</span>`
+           }
+        </td>
+      </tr>
+    `;
   });
   
-  h += `
-    <tr class="bg-slate-200 font-extrabold text-slate-800 border-t-2">
-      <td>รวมทั้งตำบล</td>
-      <td class="text-center border-l border-slate-300">${sTot}</td>
-      <td class="text-center text-blue-900 border-l border-slate-300">${sSub}</td>
-      <td class="text-center text-green-900 border-l border-slate-300">${sPass}</td>
-      <td class="text-center text-red-900 border-l border-slate-300">${sFail}</td>
-      <td class="text-center text-orange-900 border-l border-slate-300">${sWait} / ${sTot}</td>
-    </tr>
+  const totalSub = passAll + failAll;
+  html += `
+      <tr class="bg-slate-50/50 border-t-2 border-slate-100 font-bold text-slate-700">
+        <td class="py-4 px-4 text-right pr-8">รวมทั้งตำบล</td>
+        <td class="py-4 px-4 text-center">
+           <span class="text-violet-700">${totalSub}</span> / ${totalAll}
+           <div class="text-[10px] text-slate-400 font-normal">ส่งแล้ว ${(totalAll>0 ? totalSub/totalAll*100 : 0).toFixed(0)}%</div>
+        </td>
+        <td class="py-4 px-4 text-center text-emerald-600 text-lg">${passAll}</td>
+        <td class="py-4 px-4 text-center text-rose-600 text-lg">${failAll}</td>
+      </tr>
     </tbody>
-  </table>`;
-  
-  const box = $('#mooSummary');
-  box.innerHTML = h;
-  box.classList.remove('hidden');
+    </table>
+  </div>
+  `;
+
+  $('#mooSummary').innerHTML = html;
 }
 
-/* ===== Render ===== */
-function render(rows){
-  renderSummary(rows);
+/* ===== Render Main List ===== */
+function renderList(rows) {
+  const tbody = $('#tbody');
+  
+  if(!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400">ไม่พบข้อมูล</td></tr>`;
+    return;
+  }
 
-  const thead=$('#thead'), tbody=$('#tbody'), sum=$('#summaryBadge');
-  thead.innerHTML = `
-    <tr>
-      <th class="text-left">หมู่</th>
-      <th class="text-left">CID</th>
-      <th class="text-left">ชื่อ</th>
-      <th class="text-left">ผลการตรวจสอบ</th>
-      <th class="text-left">ข้อที่ไม่ถูกต้อง</th>
-      <th class="text-left">วันที่ส่ง/บันทึก</th>
-      <th class="text-left">อัปเดต</th>
-    </tr>`;
-  let fail=0, pending=0;
-  tbody.innerHTML = rows.map((r,i)=>{
-    const badge =
-      r.status==='ผ่าน' ? `<span class="badge ok">ผ่าน</span>` :
-      r.status==='ยังไม่ส่งรายงานผลการปฏิบัติงาน' ? `<span class="badge warn">${r.status}</span>` :
-      `<span class="badge bad">${r.status}</span>`;
-    if(r.status==='ยังไม่ส่งรายงานผลการปฏิบัติงาน') pending++;
-    else if(r.status!=='ผ่าน') fail++;
+  tbody.innerHTML = rows.map((r, i) => {
+    let statusBadge = '';
+    if(r.status==='ผ่าน') statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold badge-soft-green">✅ ผ่าน</span>`;
+    else if(r.status==='ยังไม่ส่ง') statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">⏳ ยังไม่ส่ง</span>`;
+    else statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold badge-soft-red">❌ ไม่ผ่าน</span>`;
 
-    const details = r.issues && r.issues.length
-      ? `<ul class="list-disc ml-5">${r.issues.map(s=>`<li>${s}</li>`).join('')}</ul>`
-      : `<span class="muted">—</span>`;
+    const issueList = (r.issues && r.issues.length) 
+      ? `<ul class="list-disc list-inside text-xs text-rose-600 space-y-0.5 mt-1">${r.issues.map(x=>`<li>${x}</li>`).join('')}</ul>`
+      : `<span class="text-xs text-slate-300">-</span>`;
+
     return `
-      <tr>
-        <td class="mono">${r.moo||'-'}</td>
-        <td class="mono">${r.cid}</td>
-        <td>${r.name||'-'}</td>
-        <td>${badge}</td>
-        <td>${details}</td>
-        <td class="mono">
-          <div>แผน: ${r.datePlan||'-'}</div>
-          <div>รายงาน: ${r.dateReport||'-'}</div>
+      <tr class="hover:bg-slate-50 transition-colors group">
+        <td class="px-6 py-4 font-bold text-slate-600">${r.moo}</td>
+        <td class="px-6 py-4 font-mono text-slate-500">${r.cid}</td>
+        <td class="px-6 py-4 font-medium text-slate-800">${r.name}</td>
+        <td class="px-6 py-4 text-center">${statusBadge}</td>
+        <td class="px-6 py-4">${issueList}</td>
+        <td class="px-6 py-4 text-right text-xs">
+          <div class="text-slate-500">แผน: ${fmtLocal(r.dp)}</div>
+          <div class="${r.dr?'text-violet-600 font-medium':'text-slate-300'}">ผล: ${fmtLocal(r.dr)}</div>
         </td>
-        <td>
-          <button class="btn btn-sm" onclick="updateOne(LAST_ROWS[${i}], document.querySelector('#selMonth').value)">
-            อัปเดต
+        <td class="px-6 py-4 text-center">
+          <button onclick="updateOne(LAST_ROWS[${i}], document.querySelector('#selMonth').value)" 
+             class="text-slate-400 hover:text-violet-600 p-2 rounded-full hover:bg-violet-50 transition-all">
+             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
           </button>
         </td>
-      </tr>`;
+      </tr>
+    `;
   }).join('');
-
-  sum.classList.remove('hidden');
-  const total=rows.length;
-  sum.innerHTML = `รวม: <b>${total}</b> | ผ่าน <b>${total - fail - pending}</b> | ไม่ผ่าน <b>${fail}</b> | ยังไม่ส่ง <b>${pending}/${total}</b>`;
-  sum.className = 'badge ' + (fail||pending? 'bad':'ok');
 }
 
-/* ===== Actions ===== */
-async function loadAPI(){
-  const month=$('#selMonth').value.trim();
-  const filter=$('#filterText').value||'';
+/* ===== API Actions ===== */
+async function loadData(){
+  const month = $('#selMonth').value;
   if(!month) return toastErr('กรุณาเลือกเดือน');
-  try{
-    loading('กำลังโหลดจาก API…');
-    const [plan, report]=await Promise.all([
-      apiGet({action:'audit_fetch_plan', month}),
-      apiGet({action:'audit_fetch_report', month})
+  
+  loading();
+  try {
+    const [pRes, rRes] = await Promise.all([
+      apiGet({ action:'audit_fetch_plan', month }),
+      apiGet({ action:'audit_fetch_report', month })
     ]);
     Swal.close();
-    if(!plan.ok) return toastErr(plan.error||'โหลดแผนไม่สำเร็จ');
-    if(!report.ok) return toastErr(report.error||'โหลดรายงานไม่สำเร็จ');
 
-    const rows=compare(plan.rows||[], report.rows||[], month, filter);
-    render(rows);
-    ok('ตรวจสอบสำเร็จ');
-  }catch(err){ Swal.close(); toastErr(err.message); }
+    if(!pRes.ok) throw new Error(pRes.error || 'โหลดแผนไม่สำเร็จ');
+    if(!rRes.ok) throw new Error(rRes.error || 'โหลดรายงานไม่สำเร็จ');
+    
+    // Process
+    const rows = compare(pRes.rows||[], rRes.rows||[], month, $('#filterText').value);
+    LAST_ROWS = rows;
+    
+    // Render
+    $('#emptyState').classList.add('hidden');
+    $('#mainContent').classList.remove('hidden');
+    
+    renderSummary(rows);
+    renderList(rows);
+    
+    ok(`ประมวลผล ${rows.length} รายการ`);
+
+  } catch(e) {
+    Swal.close();
+    toastErr(e.message);
+  }
 }
 
-document.getElementById('btnLoadAPI').onclick = loadAPI;
-document.getElementById('btnBulkUpdate').onclick = ()=> {
-  const month=document.getElementById('selMonth').value.trim();
-  if(!month) return toastErr('กรุณาเลือกเดือน');
-  bulkUpdate(month);
-};
+async function apiGet(params){
+  const u = new URL(API_BASE);
+  Object.keys(params).forEach(k => u.searchParams.set(k, params[k]));
+  const r = await fetch(u);
+  return r.json();
+}
+async function apiPost(body){
+  const r = await fetch(API_BASE, {
+    method:'POST', 
+    headers:{'Content-Type':'text/plain'},
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+
+async function updateOne(row, month){
+  const isPass = row.status === 'ผ่าน';
+  const newStatus = isPass ? 'ตรวจสอบแล้ว' : 'ไม่ถูกต้อง';
+  const note = isPass ? '' : row.issues.join(', ');
+  
+  const { isConfirmed } = await Swal.fire({
+    title: 'ยืนยันอัปเดต?',
+    html: `คุณต้องการอัปเดตสถานะของ <b>${row.name}</b><br/>เป็น <span class="font-bold ${isPass?'text-green-600':'text-red-600'}">${newStatus}</span> ใช่หรือไม่?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#8b5cf6',
+    confirmButtonText: 'ยืนยัน',
+    cancelButtonText: 'ยกเลิก'
+  });
+  
+  if(isConfirmed){
+    loading('กำลังบันทึก...');
+    try {
+      const res = await apiPost({
+        action: 'admin_update',
+        cid: row.cid,
+        month: month,
+        checkStatus: newStatus,
+        note: note
+      });
+      Swal.close();
+      if(!res.ok) throw new Error(res.error);
+      ok('บันทึกเรียบร้อย');
+    } catch(e) {
+      toastErr(e.message);
+    }
+  }
+}
+
+$('#btnLoadAPI').onclick = loadData;
+
+/* Bulk Update */
+$('#btnBulkUpdate').onclick = async () => {
+   if(!LAST_ROWS.length) return toastErr('กรุณาโหลดข้อมูลก่อน');
+   const month = $('#selMonth').value;
+   
+   const { isConfirmed } = await Swal.fire({
+     title: 'อัปเดตทั้งหมด?',
+     text: `จะทำการบันทึกสถานะของทั้ง ${LAST_ROWS.length} รายการ`,
+     icon: 'warning',
+     showCancelButton: true,
+     confirmButtonText: 'ยืนยันทำรายการ',
+     confirmButtonColor: '#8b5cf6'
+   });
+   
+   if(isConfirmed){
+     const updates = LAST_ROWS.map(r => ({
+       cid: r.cid,
+       checkStatus: r.status==='ผ่าน' ? 'ตรวจสอบแล้ว' : 'ไม่ถูกต้อง',
+       note: r.status==='ผ่าน' ? '' : r.issues.join(', ')
+     }));
+     
+     loading('กำลังบันทึก Batch...');
+     try {
+       const res = await apiPost({ action: 'admin_update_batch', month, updates });
+       Swal.close();
+       if(!res.ok) throw new Error(res.error);
+       Swal.fire('สำเร็จ', `อัปเดตแล้ว ${res.updated} รายการ`, 'success');
+     } catch(e){
+       toastErr(e.message);
+     }
+   }
+}
 </script>
 </body>
 </html>
